@@ -1,9 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply antialiased text-slate-900 bg-slate-50;
+    @apply antialiased text-slate-800 bg-slate-50 font-sans;
   }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-xl;
+  }
+
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-md border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+  }
+}
+
+@keyframes spin-vertical-pause {
+  0% {
+    transform: rotateY(0deg);
+  }
+
+  30% {
+    transform: rotateY(-360deg);
+  }
+
+  100% {
+    transform: rotateY(-360deg);
+  }
+}
+
+.animate-spin-pause {
+  animation: spin-vertical-pause 3s ease-in-out infinite;
+  transform-style: preserve-3d;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s ease-out forwards;
 }

@@ -14,15 +14,21 @@ export const teamService = {
     },
 
     async updateMemberRole(userId: string, role: 'Admin' | 'Manager' | 'Employee') {
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('profiles')
             .update({ role })
-            .eq('id', userId)
-            .select()
-            .single();
+            .eq('id', userId);
 
         if (error) throw error;
-        return data as Profile;
+    },
+
+    async updateMemberStatus(userId: string, status: 'Active' | 'Suspended' | 'Pending') {
+        const { error } = await supabase
+            .from('profiles')
+            .update({ status })
+            .eq('id', userId);
+
+        if (error) throw error;
     },
 
     async inviteMember(email: string) {

@@ -70,6 +70,16 @@ const TeamList: React.FC = () => {
         );
     }
 
+    const handleUpdateStatus = async (userId: string, newStatus: 'Active' | 'Suspended' | 'Pending') => {
+        try {
+            await teamService.updateMemberStatus(userId, newStatus);
+            setMembers(prev => prev.map(m => m.id === userId ? { ...m, status: newStatus } : m));
+        } catch (err: unknown) {
+            console.error('Failed to update status:', err);
+            alert('Failed to update status');
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
@@ -90,6 +100,7 @@ const TeamList: React.FC = () => {
                         key={member.id}
                         member={member}
                         onUpdateRole={handleUpdateRole}
+                        onUpdateStatus={handleUpdateStatus}
                         currentUserRole={currentUserProfile?.role}
                     />
                 ))}

@@ -6,10 +6,11 @@ import Badge from '../ui/Badge';
 interface TeamMemberCardProps {
     member: Profile;
     onUpdateRole: (id: string, newRole: 'Admin' | 'Manager' | 'Employee') => Promise<void>;
+    onUpdateStatus?: (id: string, newStatus: 'Active' | 'Suspended' | 'Pending') => Promise<void>;
     currentUserRole?: string | null;
 }
 
-const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, currentUserRole }) => {
+const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, onUpdateStatus, currentUserRole }) => {
     // Simple checks for permission (only Admins can change roles, for example)
     const canEdit = currentUserRole === 'Admin';
 
@@ -29,36 +30,56 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, c
                 </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-                <Badge variant={
-                    member.role === 'Admin' ? 'primary' :
-                        member.role === 'Manager' ? 'warning' : 'default'
-                }>
-                    {member.role || 'Employee'}
-                </Badge>
+            <div className="flex flex-col items-end space-y-2">
+                <div className="flex space-x-2">
+                    <Badge variant={
+                        member.status === 'Active' ? 'success' :
+                            member.status === 'Pending' ? 'warning' : 'error'
+                    }>
+                        {member.status || 'Pending'}
+                    </Badge>
+                    <Badge variant={
+                        member.role === 'Admin' ? 'primary' :
+                            member.role === 'Manager' ? 'warning' : 'default'
+                    }>
+                        {member.role || 'Employee'}
+                    </Badge>
+                </div>
 
                 {canEdit && (
-                    <div className="flex space-x-2">
-                        {member.role !== 'Admin' && (
+                    <div className="flex flex-col space-y-1 items-end">
+                        {member.status === 'Pending' && (
                             <Button
-                                variant="ghost"
+                                variant="primary"
                                 size="sm"
-                                onClick={() => onUpdateRole(member.id, 'Admin')}
-                                title="Promote to Admin"
+                                onClick={() => onUpdateStatus?.(member.id, 'Active')}
                             >
-                                Make Admin
+                                Approve User
                             </Button>
                         )}
-                        {member.role !== 'Employee' && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => onUpdateRole(member.id, 'Employee')}
-                                title="Demote to Employee"
-                            >
-                                Make Employee
-                            </Button>
-                        )}
+
+                        <div className="flex space-x-2">
+                            {member.role !== 'Admin' && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onUpdateRole(member.id, 'Admin')}
+                                    title="Promote to Admin"
+                                >
+                                    Make Admin
+                                </Button>
+                            )}
+                            {member.role !== 'Employee' && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onUpdateRole(member.id, 'Employee')}
+                                    title="Demote to Employee"
+                                >
+                                    Make Employee
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>

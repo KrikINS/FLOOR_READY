@@ -18,16 +18,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         // Check active session
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
             setSession(session);
-            setUser(session?.user ?? null);
+            const authUser = session?.user ?? null;
+
+            if (authUser) {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', authUser.id)
+                    .single();
+
+                if (profile) {
+                    authUser.user_metadata = { ...authUser.user_metadata, ...profile };
+                }
+            }
+            setUser(authUser);
             setLoading(false);
         });
 
         // Listen for changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
             setSession(session);
-            setUser(session?.user ?? null);
+            const authUser = session?.user ?? null;
+            setUser(authUser);
+
+            if (authUser) {
+                // Fetch profile
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', authUser.id)
+                    .single();
+
+                // Merge profile data into user metadata key or keep separate. 
+                // For simplicity, let's attach it to the user object metadata for now, 
+                // OR better, we should probably expose a separate profile object in context. 
+                // But let's hack it onto user_metadata for now to avoid refactoring everything.
+                if (profile) {
+                    authUser.user_metadata = { ...authUser.user_metadata, ...profile };
+                    setUser({ ...authUser });
+                }
+            }
+
             setLoading(false);
         });
 

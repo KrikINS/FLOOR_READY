@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../services/supabase';
+import SplashScreen from '../components/ui/SplashScreen';
 
 const Login: React.FC = () => {
     const navigate = useNavigate();
@@ -10,6 +11,15 @@ const Login: React.FC = () => {
         email: '',
         password: '',
     });
+
+    const [splashMode, setSplashMode] = useState<'loading' | 'login'>('loading');
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => {
+            setSplashMode('login');
+        }, 2500);
+        return () => clearTimeout(timer);
+    }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -37,23 +47,23 @@ const Login: React.FC = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-            <div className="sm:mx-auto sm:w-full sm:max-w-md">
-                <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
-                    Sign in to your account
-                </h2>
-            </div>
+        <SplashScreen mode={splashMode}>
+            <div className="w-full">
+                <div className="sm:mx-auto sm:w-full sm:max-w-md mb-8">
+                    <h2 className="text-center text-3xl font-extrabold text-white">
+                        Sign in to your account
+                    </h2>
+                </div>
 
-            <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-                <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+                <div className="bg-white/10 backdrop-blur-lg border border-white/20 py-8 px-4 shadow-2xl sm:rounded-lg sm:px-10">
                     {error && (
-                        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative">
+                        <div className="mb-4 bg-red-500/10 border border-red-500/50 text-red-200 px-4 py-3 rounded relative">
                             {error}
                         </div>
                     )}
                     <form className="space-y-6" onSubmit={handleSubmit}>
                         <div>
-                            <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+                            <label htmlFor="email" className="block text-sm font-medium text-slate-200">
                                 Email address
                             </label>
                             <div className="mt-1">
@@ -63,7 +73,7 @@ const Login: React.FC = () => {
                                     type="email"
                                     autoComplete="email"
                                     required
-                                    className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                                    className="appearance-none block w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-md shadow-sm placeholder-slate-400 text-white focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                                     value={formData.email}
                                     onChange={handleChange}
                                 />
@@ -71,7 +81,7 @@ const Login: React.FC = () => {
                         </div>
 
                         <div>
-                            <label htmlFor="password" className="block text-sm font-medium text-slate-700">
+                            <label htmlFor="password" className="block text-sm font-medium text-slate-200">
                                 Password
                             </label>
                             <div className="mt-1">
@@ -81,7 +91,7 @@ const Login: React.FC = () => {
                                     type="password"
                                     autoComplete="current-password"
                                     required
-                                    className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                                    className="appearance-none block w-full px-3 py-2 bg-slate-800/50 border border-slate-600 rounded-md shadow-sm placeholder-slate-400 text-white focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                                     value={formData.password}
                                     onChange={handleChange}
                                 />
@@ -92,7 +102,7 @@ const Login: React.FC = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                             >
                                 {loading ? 'Signing in...' : 'Sign in'}
                             </button>
@@ -102,24 +112,24 @@ const Login: React.FC = () => {
                     <div className="mt-6">
                         <div className="relative">
                             <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-slate-300" />
+                                <div className="w-full border-t border-slate-600" />
                             </div>
                             <div className="relative flex justify-center text-sm">
-                                <span className="px-2 bg-white text-slate-500">
+                                <span className="px-2 bg-transparent text-slate-400">
                                     Or
                                 </span>
                             </div>
                         </div>
 
                         <div className="mt-6 flex justify-center text-sm">
-                            <Link to="/register" className="font-medium text-primary hover:text-blue-500">
+                            <Link to="/register" className="font-medium text-primary hover:text-blue-400 transition-colors">
                                 create a new account
                             </Link>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </SplashScreen>
     );
 };
 

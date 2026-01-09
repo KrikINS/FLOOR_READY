@@ -31,6 +31,7 @@ const Register: React.FC = () => {
                         full_name: formData.fullName,
                         phone: formData.phone,
                         role: 'Employee', // Default role for now
+                        status: 'Pending',
                     },
                 },
             });
@@ -38,9 +39,7 @@ const Register: React.FC = () => {
             if (error) throw error;
 
             if (data.user) {
-                // If email confirmation is disabled or auto-confirmed
-                navigate('/dashboard');
-                // Alternatively show a message: "Check your email"
+                navigate('/pending-approval');
             }
         } catch (err: unknown) {
             console.error('Registration error:', err);
