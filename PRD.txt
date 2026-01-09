@@ -1,0 +1,445 @@
+# Product Requirements Document (PRD)
+
+## 1\. Overview
+
+**App/Website Name:** Floor Ready
+
+Floor Ready is a comprehensive event management web application designed to streamline the planning, coordination, and execution of events through efficient task management and team collaboration. The platform serves as a centralized hub where event management teams can create detailed task lists, assign responsibilities to team members, and monitor progress in real-time.
+
+**Target Audience:** Event management companies, corporate event planners, wedding coordinators, conference organizers, and any teams responsible for planning and executing events of various scales.
+
+**Key Problems Solved:**
+
+* Eliminates communication gaps between management and field teams
+* Provides real-time visibility into task progress and completion status
+* Automates inventory tracking based on task completion
+* Centralizes all event-related documentation and progress reports
+* Reduces manual coordination overhead and potential for human error
+
+## 2\. Essential Core Features
+
+### User Management & Authentication
+
+* Secure user registration and login system
+* Role-based access control (Admin, Manager, Employee)
+* User profile management with contact information and role assignments
+
+### Task Management System
+
+* Create, edit, and delete task lists for different events
+* Assign tasks to specific employees or teams
+* Set task priorities, deadlines, and dependencies
+* Categorize tasks by event type or department
+
+### Progress Tracking & Reporting
+
+* Real-time task status updates (Not Started, In Progress, Completed, On Hold)
+* Photo upload capability for visual progress documentation
+* Comment system for detailed progress notes
+* Time tracking for task completion
+
+### Inventory Management
+
+* Create and manage inventory lists linked to specific tasks
+* Automatic inventory updates based on task completion status
+* Low stock alerts and notifications
+* Inventory item categorization and search functionality
+
+### Dashboard & Analytics
+
+* Overview dashboard showing event progress and team performance
+* Task completion statistics and timeline views
+* Inventory status reports
+* Team productivity metrics
+
+### Notification System
+
+* Real-time notifications for task assignments and updates
+* Email notifications for important deadlines and milestones
+* Push notifications for urgent updates
+
+### File Management
+
+* Document upload and sharing capabilities
+* Photo gallery for progress documentation
+* File organization by event or task category
+
+## 3\. Tech Stack
+
+**Front-End:**
+
+* React with TypeScript for component-based architecture
+* Tailwind CSS for responsive design and styling
+* Vite for fast development and build optimization
+
+**Back-End:**
+
+* Supabase for authentication, database management, and real-time capabilities
+* Supabase Storage for file and image uploads
+* Supabase Real-time subscriptions for live updates
+
+**Database:**
+
+* PostgreSQL (via Supabase) for relational data management
+* Row Level Security (RLS) for data protection
+
+**APIs & Integrations:**
+
+* Supabase Auth API for user authentication
+* Supabase Storage API for file management
+* Email service integration via Supabase
+* Image optimization and compression libraries
+
+**Additional Technologies:**
+
+* Progressive Web App (PWA) capabilities for mobile-like experience
+* Service workers for offline functionality
+* Local storage for temporary data caching
+
+## 4\. Design Preferences
+
+**Interface:** Clean, professional interface with a focus on functionality and ease of use. The design should emphasize clear information hierarchy with intuitive navigation and minimal cognitive load for users working in fast-paced event environments.
+
+**Color Palette:**
+
+* Primary: #2563EB (Professional Blue)
+* Secondary: #64748B (Slate Gray)
+* Accent: #10B981 (Success Green)
+* Supporting Colors: #EF4444 (Alert Red), #F59E0B (Warning Amber)
+
+**Typography:**
+
+* Headings: Inter (modern, clean sans-serif)
+* Body Text: System UI fonts (platform-optimized readability)
+
+**Design Considerations:**
+
+* Mobile-responsive design for field workers using tablets and phones
+* High contrast ratios for outdoor visibility
+* Large touch targets for mobile interaction
+* Consistent iconography throughout the application
+
+## 5\. All Screens/Pages
+
+### `/login` \- Login Page
+
+**Route:** `/login`
+**UI Elements:**
+
+* Company logo and branding
+* Email input field with validation
+* Password input field with show/hide toggle
+* "Remember Me" checkbox
+* Login button with loading state
+* "Forgot Password" link
+* Error message display area
+
+**Navigation:**
+
+* Entry: Direct URL access, redirect from protected routes
+* Exit: Successful login redirects to dashboard, registration link to signup
+
+### `/register` \- Registration Page
+
+**Route:** `/register`
+**UI Elements:**
+
+* Registration form with fields: full name, email, phone, role selection
+* Password field with strength indicator
+* Confirm password field
+* Terms and conditions checkbox
+* Register button
+* Back to login link
+
+**Navigation:**
+
+* Entry: Link from login page or direct URL
+* Exit: Successful registration redirects to dashboard
+
+### `/dashboard` \- Main Dashboard
+
+**Route:** `/dashboard`
+**UI Elements:**
+
+* Header with user profile dropdown and notifications bell
+* Quick stats cards (Active Tasks, Completed Tasks, Pending Inventory)
+* Recent activity feed
+* Upcoming deadlines widget
+* Task progress charts
+* Quick action buttons (New Event, Add Task, View Inventory)
+
+**Navigation:**
+
+* Entry: Post-login default landing page
+* Exit: Navigation to all other sections via main menu
+
+### `/events` \- Events Management
+
+**Route:** `/events`
+**UI Elements:**
+
+* Events list/grid view toggle
+* Search and filter controls (date range, status, assigned team)
+* "Create New Event" button
+* Event cards showing: title, date, progress bar, assigned team size
+* Pagination controls
+* Bulk action controls
+
+**Navigation:**
+
+* Entry: From dashboard or main navigation
+* Exit: To specific event details or dashboard
+
+### `/events/new` \- Create New Event
+
+**Route:** `/events/new`
+**UI Elements:**
+
+* Event creation form (name, description, start/end dates, location)
+* Team member assignment multi-select
+* Event category dropdown
+* Budget allocation fields
+* Save draft and publish buttons
+* Cancel button
+
+**Navigation:**
+
+* Entry: From events list page
+* Exit: Save redirects to event details, cancel returns to events list
+
+### `/events/:id` \- Event Details
+
+**Route:** `/events/:eventId`
+**UI Elements:**
+
+* Event header with title, dates, and edit button
+* Progress overview with completion percentage
+* Task list grouped by categories
+* Team members assigned to event
+* Event timeline/calendar view
+* Inventory requirements section
+* Comments and updates feed
+
+**Navigation:**
+
+* Entry: From events list or dashboard
+* Exit: Back to events list, navigate to specific tasks
+
+### `/tasks` \- Task Management
+
+**Route:** `/tasks`
+**UI Elements:**
+
+* Task list with sortable columns (title, assignee, status, deadline)
+* Filter controls (status, assignee, event, priority)
+* Search functionality
+* "Create Task" button
+* Bulk action toolbar
+* Task status indicators and priority tags
+
+**Navigation:**
+
+* Entry: From dashboard, events, or main navigation
+* Exit: To task details or back to dashboard
+
+### `/tasks/:id` \- Task Details
+
+**Route:** `/tasks/:taskId`
+**UI Elements:**
+
+* Task header with title and status badge
+* Task description and instructions
+* Assignee information with contact details
+* Progress update form with status dropdown
+* Photo upload section for progress documentation
+* Comments section with timestamp
+* Related inventory items list
+* Task dependencies if applicable
+
+**Navigation:**
+
+* Entry: From task list or event details
+* Exit: Back to task list or related event
+
+### `/inventory` \- Inventory Management
+
+**Route:** `/inventory`
+**UI Elements:**
+
+* Inventory items table with stock levels
+* Search and category filters
+* "Add Item" button
+* Stock level indicators (low stock warnings)
+* Recent activity log
+* Export/import functionality
+* Inventory categories sidebar
+
+**Navigation:**
+
+* Entry: From dashboard or main navigation
+* Exit: To inventory item details or dashboard
+
+### `/inventory/:id` \- Inventory Item Details
+
+**Route:** `/inventory/:itemId`
+**UI Elements:**
+
+* Item header with name and current stock level
+* Item description and specifications
+* Stock history chart
+* Related tasks and events using this item
+* Update stock level form
+* Item image gallery
+* Supplier information
+
+**Navigation:**
+
+* Entry: From inventory list
+* Exit: Back to inventory list
+
+### `/team` \- Team Management
+
+**Route:** `/team`
+**UI Elements:**
+
+* Team members grid/list view
+* Search and role filter controls
+* "Invite Team Member" button
+* Member cards with profile photo, name, role, and status
+* Team performance metrics
+* Role management controls (admin only)
+
+**Navigation:**
+
+* Entry: From dashboard or main navigation
+* Exit: To member profiles or dashboard
+
+### `/profile` \- User Profile
+
+**Route:** `/profile`
+**UI Elements:**
+
+* Profile photo upload/edit
+* Personal information form (name, email, phone)
+* Password change section
+* Notification preferences
+* Account settings
+* Activity history
+* Save changes button
+
+**Navigation:**
+
+* Entry: From user dropdown in header
+* Exit: Back to previous page or dashboard
+
+### `/notifications` \- Notifications Center
+
+**Route:** `/notifications`
+**UI Elements:**
+
+* Notifications list with timestamps
+* Filter controls (read/unread, type)
+* Mark all as read button
+* Notification settings link
+* Archive functionality
+* Search notifications
+
+**Navigation:**
+
+* Entry: From notifications bell in header
+* Exit: To related items or back to dashboard
+
+## 6\. App Menu and Navigation Structure
+
+**Primary Navigation:** Horizontal navigation bar fixed at the top
+
+* **Logo/Brand:** Left-aligned, links to dashboard
+* **Main Menu Items:**
+    * Dashboard
+    * Events
+    * Tasks
+    * Inventory
+    * Team (admin/manager only)
+* **User Section:** Right-aligned with notifications bell and user profile dropdown
+
+**User Profile Dropdown:**
+
+* Profile Settings
+* Notifications
+* Help & Support
+* Logout
+
+**Secondary Navigation:** Contextual breadcrumbs below header
+**Mobile Navigation:** Collapsible hamburger menu for responsive design
+
+**Navigation Hierarchy:**
+
+```
+Dashboard (/)
+├── Events (/events)
+│   ├── New Event (/events/new)
+│   └── Event Details (/events/:id)
+├── Tasks (/tasks)
+│   └── Task Details (/tasks/:id)
+├── Inventory (/inventory)
+│   └── Item Details (/inventory/:id)
+├── Team (/team)
+└── Profile (/profile)
+    └── Notifications (/notifications)
+```
+
+## 7\. User Flow
+
+### Primary User Journey - Event Manager
+
+1. **Login Process**
+    * User visits application URL
+    * Enters credentials on login page
+    * System authenticates and redirects to dashboard
+2. **Dashboard Overview**
+    * User reviews dashboard summary cards
+    * Checks recent activity and upcoming deadlines
+    * Identifies urgent items requiring attention
+3. **Event Creation**
+    * Clicks "Create New Event" from dashboard or events page
+    * Fills out event details form (name, dates, location, description)
+    * Assigns initial team members
+    * Saves event and redirects to event details page
+4. **Task Management**
+    * From event details page, creates task lists
+    * Assigns tasks to specific team members with deadlines
+    * Sets task priorities and dependencies
+    * Links required inventory items to tasks
+5. **Progress Monitoring**
+    * Regularly checks dashboard for task updates
+    * Reviews task details with employee progress reports
+    * Examines uploaded photos and status comments
+    * Communicates with team through task comments
+6. **Inventory Tracking**
+    * Monitors inventory levels linked to active tasks
+    * Reviews automated updates based on task completion
+    * Manages stock levels and supplier information
+    * Addresses low stock alerts
+
+### Secondary User Journey - Employee
+
+1. **Login and Dashboard**
+    * Employee logs in and sees assigned tasks on dashboard
+    * Reviews upcoming deadlines and priorities
+2. **Task Execution**
+    * Clicks on assigned task from dashboard or tasks page
+    * Reviews task instructions and requirements
+    * Updates task status as work progresses
+3. **Progress Reporting**
+    * Takes photos of completed work or current progress
+    * Uploads images through task details page
+    * Adds written status updates and comments
+    * Updates task completion percentage
+4. **Inventory Updates**
+    * Reports inventory usage during task execution
+    * Flags inventory issues or shortages
+    * Confirms inventory items used for task completion
+5. **Communication**
+    * Responds to manager comments on tasks
+    * Reports obstacles or delays through task comments
+    * Receives notifications for new assignments and updates
