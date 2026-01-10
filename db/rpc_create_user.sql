@@ -1,5 +1,10 @@
+```sql
 -- Function to allow Admin to create a new user with password
 -- Run this in Supabase Dashboard > SQL Editor
+
+-- REQUIRED: Enable pgcrypto for password hashing
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 CREATE OR REPLACE FUNCTION create_new_user(
         email text,
         password text,

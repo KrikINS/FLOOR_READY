@@ -16,7 +16,6 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, o
     // For now, let's stick to: Only Admin can change roles.
     // If you want Managers to edit Staff permissions, un-comment the next line:
     // const canEdit = currentUserRole === 'Admin' || (currentUserRole === 'Manager' && member.role === 'Staff');
-    const isOwner = currentUserRole === 'Admin'; // Or pass isOwner prop?
     // Let's rely on currentUserRole being 'Admin' for ROLE changes for safety.
     const canEditRoles = currentUserRole === 'Admin';
     const canEditStatus = currentUserRole === 'Admin' || currentUserRole === 'Manager';
