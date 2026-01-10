@@ -5,13 +5,17 @@
 -- REQUIRED: Enable pgcrypto for password hashing
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
+-- REQUIRED: Add email column to profiles if it doesn't exist
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS email TEXT;
+
 CREATE OR REPLACE FUNCTION create_new_user(
         email text,
         password text,
         full_name text,
         role text
-    ) RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER -- Runs with superuser privileges
-SET search_path = public -- Security best practice
+)
+RETURNS uuid LANGUAGE plpgsql SECURITY DEFINER -- Runs with superuser privileges
+SET search_path = public, extensions -- Security best practice, but allow extensions
     AS $$
 DECLARE new_id uuid;
 BEGIN -- Check if caller is Admin (simple check)

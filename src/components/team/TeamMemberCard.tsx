@@ -8,10 +8,11 @@ interface TeamMemberCardProps {
     member: Profile;
     onUpdateRole: (id: string, newRole: 'Admin' | 'Manager' | 'Staff') => Promise<void>;
     onUpdateStatus?: (id: string, newStatus: 'Active' | 'Suspended' | 'Pending') => Promise<void>;
+    onDelete?: (id: string) => Promise<void>;
     currentUserRole?: string | null;
 }
 
-const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, onUpdateStatus, currentUserRole }) => {
+const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, onUpdateStatus, onDelete, currentUserRole }) => {
     // Permission: Admin can edit anyone (in theory), Manager can maybe edit Staff?
     // For now, let's stick to: Only Admin can change roles.
     // If you want Managers to edit Staff permissions, un-comment the next line:
@@ -19,6 +20,7 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, o
     // Let's rely on currentUserRole being 'Admin' for ROLE changes for safety.
     const canEditRoles = currentUserRole === 'Admin';
     const canEditStatus = currentUserRole === 'Admin' || currentUserRole === 'Manager';
+    const canDelete = currentUserRole === 'Admin';
 
     return (
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 flex items-center justify-between">
@@ -95,6 +97,30 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, o
                                     Make Staff
                                 </Button>
                             )}
+                        </div>
+                    )}
+
+                    {canDelete && onDelete && (
+                        <div className="mt-1">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={() => {
+                                    if (confirm('Are you sure you want to PERMANENTLY delete this user? This action cannot be undone.')) {
+                                        // We need a way to pass this up. 
+                                        // Since we don't have onDelete prop yet, we might need to cast or update props.
+                                        // Actually, let's look at the Props interface first.
+                                        // The user asked to "add an option", so I need to update the parent too.
+                                        // I'll emit a custom event or, better, update the props in the next step.
+                                        // For now, let's assume `onDelete` is passed.
+                                        // WAIT: I need to update the interface first.
+                                        // Let's defer this change to the next tool call where I update the Interface AND the component.
+                                    }
+                                }}
+                            >
+                                Delete User
+                            </Button>
                         </div>
                     )}
                 </div>

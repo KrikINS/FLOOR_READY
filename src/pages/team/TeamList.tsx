@@ -86,6 +86,21 @@ const TeamList: React.FC = () => {
         }
     };
 
+    const handleDeleteUser = async (userId: string) => {
+        try {
+            await teamService.deleteMember(userId);
+            setMembers(prev => prev.filter(m => m.id !== userId));
+        } catch (err: any) {
+            console.error('Failed to delete user:', err);
+            // Helpful error message if RPC is missing
+            if (err.message && err.message.includes('function delete_user') && err.message.includes('does not exist')) {
+                alert('Missing SQL Function! Please run the "db/rpc_delete_user.sql" script in Supabase.');
+            } else {
+                alert('Failed to delete user: ' + err.message);
+            }
+        }
+    };
+
     // Use robust role check from metadata if available (from our new AuthContext)
     // fallback to fetched profile
     // HOTFIX: Hardcode owner email to always be Admin to prevent lockout
@@ -112,9 +127,10 @@ const TeamList: React.FC = () => {
                     <TeamMemberCard
                         key={member.id}
                         member={member}
+                        currentUserRole={currentRole}
                         onUpdateRole={handleUpdateRole}
                         onUpdateStatus={handleUpdateStatus}
-                        currentUserRole={currentUserProfile?.role}
+                        onDelete={handleDeleteUser}
                     />
                 ))}
             </div>

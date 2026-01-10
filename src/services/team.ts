@@ -22,6 +22,11 @@ export const teamService = {
         if (error) throw error;
     },
 
+    async deleteMember(userId: string) {
+        const { error } = await supabase.rpc('delete_user', { target_user_id: userId });
+        if (error) throw error;
+    },
+
     async updateMemberStatus(userId: string, status: 'Active' | 'Suspended' | 'Pending') {
         const { error } = await supabase
             .from('profiles')
