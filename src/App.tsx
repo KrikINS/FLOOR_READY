@@ -19,7 +19,6 @@ import TaskDetails from './pages/tasks/TaskDetails';
 import InventoryList from './pages/inventory/InventoryList';
 import NewItem from './pages/inventory/NewItem';
 import TeamList from './pages/team/TeamList';
-import TeamList from './pages/team/TeamList';
 import PendingApproval from './pages/PendingApproval';
 import DebugConnection from './pages/DebugConnection';
 
@@ -41,7 +40,6 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
       <Route path="/register" element={<Register />} />
       <Route path="/pending-approval" element={<PendingApproval />} />
       <Route path="/debug-connection" element={<DebugConnection />} />
