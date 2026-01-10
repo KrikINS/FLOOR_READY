@@ -111,20 +111,11 @@ const Login: React.FC = () => {
 
                     <div className="mt-6">
                         <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-slate-600" />
-                            </div>
                             <div className="relative flex justify-center text-sm">
                                 <span className="px-2 bg-transparent text-slate-400">
-                                    Or
+                                    Contact Admin to request access
                                 </span>
                             </div>
-                        </div>
-
-                        <div className="mt-6 flex justify-center text-sm">
-                            <Link to="/register" className="font-medium text-primary hover:text-blue-400 transition-colors">
-                                create a new account
-                            </Link>
                         </div>
                     </div>
                 </div>

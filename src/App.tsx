@@ -6,7 +6,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import SplashScreen from './components/ui/SplashScreen';
 import Login from './pages/Login';
-import Register from './pages/Register'; // Changed from placeholder
 import Dashboard from './pages/Dashboard';
 
 import EventsList from './pages/events/EventsList';
@@ -19,7 +18,6 @@ import TaskDetails from './pages/tasks/TaskDetails';
 import InventoryList from './pages/inventory/InventoryList';
 import NewItem from './pages/inventory/NewItem';
 import TeamList from './pages/team/TeamList';
-import PendingApproval from './pages/PendingApproval';
 import DebugConnection from './pages/DebugConnection';
 
 // Placeholders for other pages
@@ -40,8 +38,6 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/pending-approval" element={<PendingApproval />} />
       <Route path="/debug-connection" element={<DebugConnection />} />
 
       <Route element={<ProtectedRoute />}>
