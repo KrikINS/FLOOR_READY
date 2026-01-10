@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { teamService } from '../../services/team';
 import type { Profile } from '../../types';
 import TeamMemberCard from '../../components/team/TeamMemberCard';
-import InviteMemberModal from '../../components/team/InviteMemberModal';
+import AddUserModal from '../../components/team/AddUserModal';
 import Button from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
 
@@ -11,7 +11,7 @@ const TeamList: React.FC = () => {
     const [members, setMembers] = useState<Profile[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+    const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
 
     // We'll simplisticly determine current user role by finding them in the list or assume from context if we had it there
     // Ideally AuthContext would provide the full profile including role. 
@@ -63,12 +63,6 @@ const TeamList: React.FC = () => {
         }
     };
 
-    const handleInvite = async (email: string) => {
-        await teamService.inviteMember(email);
-        alert(`Invitation sent to ${email}`);
-        // In a real app, maybe add a "Pending" member to the list
-    };
-
     if (loading) {
         return <div className="text-center py-12">Loading team...</div>;
     }
@@ -92,16 +86,20 @@ const TeamList: React.FC = () => {
         }
     };
 
+    // Use robust role check from metadata if available (from our new AuthContext)
+    // fallback to fetched profile
+    const isAdmin = currentUser?.user_metadata?.role === 'Admin' || currentUserProfile?.role === 'Admin';
+
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Team Members</h1>
-                    <p className="text-slate-500">Manage your team and their roles.</p>
+                    <h1 className="text-2xl font-bold text-slate-900">User Management</h1>
+                    <p className="text-slate-500">Create, manage, and assign roles to your team.</p>
                 </div>
-                {currentUserProfile?.role === 'Admin' && (
-                    <Button onClick={() => setIsInviteModalOpen(true)}>
-                        Invite Member
+                {isAdmin && (
+                    <Button onClick={() => setIsAddUserModalOpen(true)}>
+                        + Add New User
                     </Button>
                 )}
             </div>
@@ -118,10 +116,10 @@ const TeamList: React.FC = () => {
                 ))}
             </div>
 
-            <InviteMemberModal
-                isOpen={isInviteModalOpen}
-                onClose={() => setIsInviteModalOpen(false)}
-                onInvite={handleInvite}
+            <AddUserModal
+                isOpen={isAddUserModalOpen}
+                onClose={() => setIsAddUserModalOpen(false)}
+                onUserAdded={fetchTeam}
             />
         </div>
     );

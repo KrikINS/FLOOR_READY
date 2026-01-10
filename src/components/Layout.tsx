@@ -24,7 +24,7 @@ const NavLink: React.FC<{ to: string; children: React.ReactNode }> = ({ to, chil
 
 const Layout: React.FC = () => {
     const navigate = useNavigate();
-    const { signOut } = useAuth();
+    const { signOut, user } = useAuth();
 
     const handleSignOut = async () => {
         await signOut();
@@ -52,9 +52,16 @@ const Layout: React.FC = () => {
                             </div>
                         </div>
                         <div className="flex items-center space-x-4">
-                            <Link to="/profile" className="text-sm font-medium text-slate-500 hover:text-slate-700">
-                                Profile
-                            </Link>
+                            <div className="flex flex-col items-end">
+                                <Link to="/profile" className="text-sm font-medium text-slate-900 hover:text-primary">
+                                    {user?.user_metadata?.full_name || 'Profile'}
+                                </Link>
+                                {user?.user_metadata?.role === 'Admin' && (
+                                    <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-bold">
+                                        Admin
+                                    </span>
+                                )}
+                            </div>
                             <Button variant="ghost" size="sm" onClick={handleSignOut}>
                                 Sign Out
                             </Button>
