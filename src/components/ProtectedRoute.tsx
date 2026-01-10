@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute: React.FC = () => {
-    const { user, loading } = useAuth();
+    const { user, profile, loading } = useAuth();
 
     if (loading) {
         return (
@@ -17,18 +17,26 @@ const ProtectedRoute: React.FC = () => {
         return <Navigate to="/login" replace />;
     }
 
-    // Check status
-    const status = user.user_metadata?.status;
-    // Allow if Active OR if no status (legacy/admin edge case) but safest to enforce.
-    // However, newly registered users WILL have status 'Pending'.
-    // Existing users just got updated to 'Active'.
-    if (status === 'Pending') {
+    // Critical Logic:
+    // 1. If we have a user but NO profile, the DB trigger likely failed.
+    //    We treat this as "Pending" or "Error" state.
+    if (!profile) {
+        // Ideally we might want a specific "Profile Error" page, 
+        // but "Pending" page is a safe fallback as it has the "Check Status" button 
+        // which will perform the raw check and reveal the issue.
         return <Navigate to="/pending-approval" replace />;
     }
-    if (status === 'Suspended') {
+
+    // 2. Check explicit status
+    if (profile.status === 'Pending') {
+        return <Navigate to="/pending-approval" replace />;
+    }
+
+    if (profile.status === 'Suspended') {
         return <div className="p-8 text-center text-red-600">Your account has been suspended.</div>;
     }
 
+    // 3. If Active (or any other status), allow access
     return <Outlet />;
 };
 
