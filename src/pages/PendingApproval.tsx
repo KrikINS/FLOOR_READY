@@ -18,9 +18,14 @@ const PendingApproval: React.FC = () => {
                         You will be able to access the dashboard once your account is activated.
                     </p>
 
-                    <Button onClick={() => signOut()}>
-                        Sign Out
-                    </Button>
+                    <div className="flex flex-col space-y-3">
+                        <Button onClick={() => window.location.reload()}>
+                            I have been approved (Check Again)
+                        </Button>
+                        <Button variant="ghost" onClick={() => signOut()}>
+                            Sign Out
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>
