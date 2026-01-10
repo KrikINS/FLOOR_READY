@@ -15,7 +15,7 @@ export interface Profile {
     id: string;
     full_name: string | null;
     phone: string | null;
-    role: 'Admin' | 'Manager' | 'Employee' | null;
+    role: 'Admin' | 'Manager' | 'Staff' | null;
     status: 'Pending' | 'Active' | 'Suspended' | null;
     avatar_url: string | null;
     updated_at: string | null;

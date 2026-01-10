@@ -52,7 +52,7 @@ const TeamList: React.FC = () => {
         fetchTeam();
     }, [fetchTeam]);
 
-    const handleUpdateRole = async (userId: string, newRole: 'Admin' | 'Manager' | 'Employee') => {
+    const handleUpdateRole = async (userId: string, newRole: 'Admin' | 'Manager' | 'Staff') => {
         try {
             await teamService.updateMemberRole(userId, newRole);
             // Optimistic update or refetch
@@ -90,7 +90,8 @@ const TeamList: React.FC = () => {
     // fallback to fetched profile
     // HOTFIX: Hardcode owner email to always be Admin to prevent lockout
     const isOwner = currentUser?.email === 'anees.ahad1007@gmail.com';
-    const isAdmin = isOwner || currentUser?.user_metadata?.role === 'Admin' || currentUserProfile?.role === 'Admin';
+    const currentRole = currentUser?.user_metadata?.role || currentUserProfile?.role;
+    const canAddUser = isOwner || currentRole === 'Admin' || currentRole === 'Manager';
 
     return (
         <div className="space-y-6">
@@ -99,7 +100,7 @@ const TeamList: React.FC = () => {
                     <h1 className="text-2xl font-bold text-slate-900">User Management</h1>
                     <p className="text-slate-500">Create, manage, and assign roles to your team.</p>
                 </div>
-                {isAdmin && (
+                {canAddUser && (
                     <Button onClick={() => setIsAddUserModalOpen(true)}>
                         + Add New User
                     </Button>

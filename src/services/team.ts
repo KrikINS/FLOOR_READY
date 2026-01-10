@@ -13,7 +13,7 @@ export const teamService = {
         return data as Profile[];
     },
 
-    async updateMemberRole(userId: string, role: 'Admin' | 'Manager' | 'Employee') {
+    async updateMemberRole(userId: string, role: 'Admin' | 'Manager' | 'Staff') {
         const { error } = await supabase
             .from('profiles')
             .update({ role })

@@ -3,16 +3,23 @@ import type { Profile } from '../../types';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
 
+// ...
 interface TeamMemberCardProps {
     member: Profile;
-    onUpdateRole: (id: string, newRole: 'Admin' | 'Manager' | 'Employee') => Promise<void>;
+    onUpdateRole: (id: string, newRole: 'Admin' | 'Manager' | 'Staff') => Promise<void>;
     onUpdateStatus?: (id: string, newStatus: 'Active' | 'Suspended' | 'Pending') => Promise<void>;
     currentUserRole?: string | null;
 }
 
 const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, onUpdateStatus, currentUserRole }) => {
-    // Simple checks for permission (only Admins can change roles, for example)
-    const canEdit = currentUserRole === 'Admin';
+    // Permission: Admin can edit anyone (in theory), Manager can maybe edit Staff?
+    // For now, let's stick to: Only Admin can change roles.
+    // If you want Managers to edit Staff permissions, un-comment the next line:
+    // const canEdit = currentUserRole === 'Admin' || (currentUserRole === 'Manager' && member.role === 'Staff');
+    const isOwner = currentUserRole === 'Admin'; // Or pass isOwner prop?
+    // Let's rely on currentUserRole being 'Admin' for ROLE changes for safety.
+    const canEditRoles = currentUserRole === 'Admin';
+    const canEditStatus = currentUserRole === 'Admin' || currentUserRole === 'Manager';
 
     return (
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 flex items-center justify-between">
@@ -42,22 +49,22 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, o
                         member.role === 'Admin' ? 'primary' :
                             member.role === 'Manager' ? 'warning' : 'default'
                     }>
-                        {member.role || 'Employee'}
+                        {member.role || 'Staff'}
                     </Badge>
                 </div>
 
-                {canEdit && (
-                    <div className="flex flex-col space-y-1 items-end">
-                        {member.status === 'Pending' && (
-                            <Button
-                                variant="primary"
-                                size="sm"
-                                onClick={() => onUpdateStatus?.(member.id, 'Active')}
-                            >
-                                Approve User
-                            </Button>
-                        )}
+                <div className="flex flex-col space-y-1 items-end">
+                    {canEditStatus && member.status === 'Pending' && (
+                        <Button
+                            variant="primary"
+                            size="sm"
+                            onClick={() => onUpdateStatus?.(member.id, 'Active')}
+                        >
+                            Approve User
+                        </Button>
+                    )}
 
+                    {canEditRoles && (
                         <div className="flex space-x-2">
                             {member.role !== 'Admin' && (
                                 <Button
@@ -69,19 +76,29 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, o
                                     Make Admin
                                 </Button>
                             )}
-                            {member.role !== 'Employee' && (
+                            {member.role !== 'Manager' && (
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => onUpdateRole(member.id, 'Employee')}
-                                    title="Demote to Employee"
+                                    onClick={() => onUpdateRole(member.id, 'Manager')}
+                                    title="Promote to Manager"
                                 >
-                                    Make Employee
+                                    Make Manager
+                                </Button>
+                            )}
+                            {member.role !== 'Staff' && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onUpdateRole(member.id, 'Staff')}
+                                    title="Demote to Staff"
+                                >
+                                    Make Staff
                                 </Button>
                             )}
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </div>
     );

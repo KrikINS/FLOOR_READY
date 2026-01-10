@@ -14,7 +14,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onUserAdde
         email: '',
         password: '',
         fullName: '',
-        role: 'Employee'
+        role: 'Staff'
     });
 
     if (!isOpen) return null;
@@ -36,7 +36,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onUserAdde
             alert('User created successfully!');
             onUserAdded();
             onClose();
-            setFormData({ email: '', password: '', fullName: '', role: 'Employee' }); // Reset
+            setFormData({ email: '', password: '', fullName: '', role: 'Staff' }); // Reset
         } catch (err: any) {
             console.error('Error creating user:', err);
             alert(`Failed to create user: ${err.message}`);
@@ -97,7 +97,7 @@ const AddUserModal: React.FC<AddUserModalProps> = ({ isOpen, onClose, onUserAdde
                                     value={formData.role}
                                     onChange={e => setFormData({ ...formData, role: e.target.value })}
                                 >
-                                    <option value="Employee">Employee</option>
+                                    <option value="Staff">Staff</option>
                                     <option value="Manager">Manager</option>
                                     <option value="Admin">Admin</option>
                                 </select>
