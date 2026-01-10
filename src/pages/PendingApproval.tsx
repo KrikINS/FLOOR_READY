@@ -1,12 +1,10 @@
 
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Button from '../components/ui/Button';
 
 const PendingApproval: React.FC = () => {
-    const { signOut, user } = useAuth();
-    const navigate = useNavigate();
+    const { user } = useAuth();
     const [isChecking, setIsChecking] = useState(false);
     const [dbStatus, setDbStatus] = useState<string | null>(null);
 
