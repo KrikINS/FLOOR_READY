@@ -85,6 +85,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ mode = 'loading', children 
                         </span>
                     </div>
                 </div>
+                <div className="text-slate-500 text-[10px] tracking-widest mt-2 uppercase">v1.0.1</div>
             </div>
         </div>
     );
