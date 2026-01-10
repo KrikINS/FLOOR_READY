@@ -21,16 +21,28 @@ const TeamList: React.FC = () => {
     const fetchTeam = React.useCallback(async () => {
         try {
             setLoading(true);
-            const data = await teamService.getTeamMembers();
+            setError(null);
+
+            // Create a timeout promise
+            const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Request timed out. Check your network or Supabase configuration.')), 10000)
+            );
+
+            // Race the fetch against the timeout
+            const data = await Promise.race([
+                teamService.getTeamMembers(),
+                timeoutPromise
+            ]) as Profile[];
+
             setMembers(data);
 
             if (currentUser) {
                 const me = data.find(p => p.id === currentUser.id);
                 setCurrentUserProfile(me || null);
             }
-        } catch (err: unknown) {
-            console.error(err);
-            setError('Failed to load team members');
+        } catch (err: any) {
+            console.error('Fetch team error:', err);
+            setError(err.message || 'Failed to load team members');
         } finally {
             setLoading(false);
         }
