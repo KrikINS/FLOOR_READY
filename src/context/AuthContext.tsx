@@ -18,24 +18,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         // Check active session
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
-            setSession(session);
-            const authUser = session?.user ?? null;
+        // Check active session with timeout
+        const checkSession = async () => {
+            try {
+                const { data: { session } } = await Promise.race([
+                    supabase.auth.getSession(),
+                    new Promise<{ data: { session: null } }>((resolve) =>
+                        setTimeout(() => resolve({ data: { session: null } }), 5000)
+                    )
+                ]);
 
-            if (authUser) {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', authUser.id)
-                    .single();
+                if (session) {
+                    setSession(session);
+                    const authUser = session.user;
 
-                if (profile) {
-                    authUser.user_metadata = { ...authUser.user_metadata, ...profile };
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', authUser.id)
+                        .single();
+
+                    if (profile) {
+                        authUser.user_metadata = { ...authUser.user_metadata, ...profile };
+                    }
+                    setUser(authUser);
                 }
+            } catch (err) {
+                console.error('Auth session check failed:', err);
+            } finally {
+                setLoading(false);
             }
-            setUser(authUser);
-            setLoading(false);
-        });
+        };
+
+        checkSession();
 
         // Listen for changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
