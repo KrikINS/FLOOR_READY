@@ -116,6 +116,12 @@ const TeamList: React.FC = () => {
                 ))}
             </div>
 
+            {!loading && members.length === 0 && (
+                <div className="text-center py-12 bg-white rounded-lg border border-dashed border-slate-300">
+                    <p className="text-slate-500">No team members found.</p>
+                </div>
+            )}
+
             <AddUserModal
                 isOpen={isAddUserModalOpen}
                 onClose={() => setIsAddUserModalOpen(false)}

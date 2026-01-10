@@ -56,11 +56,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeAuth = async () => {
         try {
             // 1. Get Session
-            // Race the session check against a 5s timeout
+            // Race the session check against a 15s timeout (increased for slow connections)
             const { data: { session: currentSession } } = await Promise.race([
                 supabase.auth.getSession(),
                 new Promise<{ data: { session: null } }>((resolve) =>
-                    setTimeout(() => resolve({ data: { session: null } }), 5000)
+                    setTimeout(() => resolve({ data: { session: null } }), 15000)
                 )
             ]);
 
