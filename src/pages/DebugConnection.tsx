@@ -34,6 +34,32 @@ const DebugConnection: React.FC = () => {
         }
     };
 
+    const testFetch = async () => {
+        addLog('Testing Raw Fetch...');
+        const url = import.meta.env.VITE_SUPABASE_URL;
+        const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        try {
+            const res = await fetch(`${url}/rest/v1/profiles?select=*&limit=1`, {
+                headers: {
+                    'apikey': key,
+                    'Authorization': `Bearer ${key}`
+                }
+            });
+
+            addLog(`✅ Raw Fetch Status: ${res.status} ${res.statusText}`);
+            if (res.ok) {
+                const json = await res.json();
+                addLog('✅ Data received');
+            } else {
+                const text = await res.text();
+                addLog(`❌ Fetch Body: ${text}`);
+            }
+        } catch (err: any) {
+            addLog(`❌ Fetch Network Error: ${err.message}`);
+        }
+    };
+
     const testDB = async () => {
         addLog('Testing DB Connection (Profiles)...');
         try {
@@ -63,6 +89,7 @@ const DebugConnection: React.FC = () => {
             <div className="flex space-x-4">
                 <button onClick={testAuth} className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Test Auth</button>
                 <button onClick={testDB} className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Test Database</button>
+                <button onClick={testFetch} className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">Test Raw Fetch</button>
             </div>
 
             <div className="bg-slate-900 text-green-400 p-4 rounded shadow h-64 overflow-auto whitespace-pre-wrap">
