@@ -88,7 +88,9 @@ const TeamList: React.FC = () => {
 
     // Use robust role check from metadata if available (from our new AuthContext)
     // fallback to fetched profile
-    const isAdmin = currentUser?.user_metadata?.role === 'Admin' || currentUserProfile?.role === 'Admin';
+    // HOTFIX: Hardcode owner email to always be Admin to prevent lockout
+    const isOwner = currentUser?.email === 'anees.ahad1007@gmail.com';
+    const isAdmin = isOwner || currentUser?.user_metadata?.role === 'Admin' || currentUserProfile?.role === 'Admin';
 
     return (
         <div className="space-y-6">
