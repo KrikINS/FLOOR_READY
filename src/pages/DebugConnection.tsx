@@ -50,7 +50,7 @@ const DebugConnection: React.FC = () => {
             addLog(`✅ Raw Fetch Status: ${res.status} ${res.statusText}`);
             if (res.ok) {
                 const json = await res.json();
-                addLog('✅ Data received');
+                addLog(`✅ Data received: ${JSON.stringify(json).slice(0, 50)}...`);
             } else {
                 const text = await res.text();
                 addLog(`❌ Fetch Body: ${text}`);
