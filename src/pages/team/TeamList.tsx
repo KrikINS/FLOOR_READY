@@ -127,7 +127,7 @@ const TeamList: React.FC = () => {
                     <TeamMemberCard
                         key={member.id}
                         member={member}
-                        currentUserRole={currentRole}
+                        currentUserRole={isOwner ? 'Admin' : currentRole}
                         onUpdateRole={handleUpdateRole}
                         onUpdateStatus={handleUpdateStatus}
                         onDelete={handleDeleteUser}
