@@ -91,8 +91,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 setProfile(null);
                 setLoading(false);
             } else if (newSession?.user) {
-                setSession(newSession);
-                setUser(newSession.user);
+                // OPTIMIZATION: Only update state if the token effectively changed to prevent re-renders on focus
+                setSession(prev => {
+                    if (prev?.access_token === newSession.access_token) {
+                        return prev; // No change
+                    }
+                    return newSession;
+                });
+
+                setUser(prev => {
+                    if (prev?.id === newSession.user.id && prev?.updated_at === newSession.user.updated_at) {
+                        return prev;
+                    }
+                    return newSession.user;
+                });
 
                 // Only fetch profile if we don't have it or if it's a new user
                 if (!profile || profile.id !== newSession.user.id) {
