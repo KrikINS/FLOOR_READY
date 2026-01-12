@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import SplashScreen from '../components/ui/SplashScreen';
 
@@ -113,7 +113,7 @@ const Login: React.FC = () => {
                         <div className="relative">
                             <div className="relative flex justify-center text-sm">
                                 <span className="px-2 bg-transparent text-slate-400">
-                                    Contact Admin to request access
+                                    Or <Link to="/register" className="font-medium text-blue-500 hover:text-blue-400">create a new account</Link>
                                 </span>
                             </div>
                         </div>

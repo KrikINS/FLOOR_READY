@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import SplashScreen from './components/ui/SplashScreen';
 import Login from './pages/Login';
+import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 
 import EventsList from './pages/events/EventsList';
@@ -38,6 +39,7 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/debug-connection" element={<DebugConnection />} />
 
       <Route element={<ProtectedRoute />}>

@@ -1,9 +1,13 @@
 
 import React from 'react';
 
-const KrikInsLogo: React.FC = () => {
+interface KrikInsLogoProps {
+    className?: string;
+}
+
+const KrikInsLogo: React.FC<KrikInsLogoProps> = ({ className = '' }) => {
     return (
-        <div className="fixed bottom-4 right-4 z-50 flex items-center justify-center pointer-events-none opacity-80 hover:opacity-100 transition-opacity duration-300">
+        <div className={`fixed bottom-4 right-4 z-50 flex items-center justify-center pointer-events-none opacity-80 hover:opacity-100 transition-opacity duration-300 ${className}`}>
             <div className="relative flex items-center font-black text-2xl tracking-tighter select-none">
                 <span className="text-slate-800 drop-shadow-sm">Krik</span>
                 <div className="relative ml-0.5">
