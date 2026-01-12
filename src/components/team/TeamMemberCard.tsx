@@ -30,6 +30,7 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, o
                     <AvatarUploader
                         userId={member.id}
                         currentAvatarUrl={member.avatar_url || undefined}
+                        size="sm"
                         onUploadComplete={() => { window.location.reload(); }}
                     />
                 </div>

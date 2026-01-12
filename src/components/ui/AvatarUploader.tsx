@@ -8,15 +8,22 @@ interface AvatarUploaderProps {
     currentAvatarUrl?: string;
     userId: string;
     onUploadComplete: (newUrl: string) => void;
+    size?: 'sm' | 'md' | 'lg';
 }
 
-const AvatarUploader: React.FC<AvatarUploaderProps> = ({ currentAvatarUrl, userId, onUploadComplete }) => {
+const AvatarUploader: React.FC<AvatarUploaderProps> = ({ currentAvatarUrl, userId, onUploadComplete, size = 'md' }) => {
     const [imageSrc, setImageSrc] = useState<string | null>(null);
     const [crop, setCrop] = useState({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+
+    const sizeClasses = {
+        sm: 'w-10 h-10',
+        md: 'w-24 h-24',
+        lg: 'w-32 h-32'
+    };
 
     const onCropComplete = useCallback((_: any, croppedAreaPixels: any) => {
         setCroppedAreaPixels(croppedAreaPixels);
@@ -136,19 +143,20 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({ currentAvatarUrl, userI
     return (
         <div className="flex flex-col items-center gap-4">
             <div className="relative group cursor-pointer">
-                <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-slate-700 group-hover:border-blue-500 transition-colors bg-slate-800">
+                <div className={`${sizeClasses[size]} rounded-full overflow-hidden border border-slate-700 group-hover:border-blue-500 transition-colors bg-slate-800`}>
                     {currentAvatarUrl ? (
                         <img src={currentAvatarUrl} alt="Avatar" className="w-full h-full object-cover" />
                     ) : (
-                        <div className="w-full h-full flex items-center justify-center text-slate-500">
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-full h-full flex items-center justify-center text-slate-500 text-xs font-medium">
+                            {/* Simple fallback icon or initials context if we had it, for now just generic icon */}
+                            <svg className="w-[50%] h-[50%]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
                         </div>
                     )}
 
                     <label className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                        <span className="text-white text-xs font-medium">Change</span>
+                        {size !== 'sm' && <span className="text-white text-xs font-medium">Change</span>}
                         <input
                             type="file"
                             className="hidden"
