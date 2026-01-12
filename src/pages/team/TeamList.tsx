@@ -110,16 +110,6 @@ const TeamList: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            {/* DEBUGGING BLOCK - REMOVE AFTER FIXING */}
-            <div className="bg-yellow-50 p-2 border border-yellow-200 rounded text-xs font-mono text-yellow-800 mb-4">
-                <strong>DEBUG INFO:</strong><br />
-                Email: {currentUser?.email}<br />
-                IsOwner: {isOwner ? 'YES' : 'NO'}<br />
-                Role Override: {isOwner ? 'Admin' : currentRole}<br />
-                Can Add User: {canAddUser ? 'YES' : 'NO'}
-            </div>
-            {/* END DEBUGGING BLOCK */}
-
             <div className="flex justify-between items-center">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">User Management</h1>
