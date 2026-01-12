@@ -7,6 +7,7 @@ import Layout from './components/Layout';
 import SplashScreen from './components/ui/SplashScreen';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import PendingApproval from './pages/PendingApproval';
 import Dashboard from './pages/Dashboard';
 
 import EventsList from './pages/events/EventsList';
@@ -41,6 +42,7 @@ function AppContent() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/debug-connection" element={<DebugConnection />} />
+      <Route path="/pending-approval" element={<PendingApproval />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>

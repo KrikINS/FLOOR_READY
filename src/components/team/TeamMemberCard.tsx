@@ -2,6 +2,7 @@ import React from 'react';
 import type { Profile } from '../../types';
 import Button from '../ui/Button';
 import Badge from '../ui/Badge';
+import AvatarUploader from '../ui/AvatarUploader';
 
 // ...
 interface TeamMemberCardProps {
@@ -25,12 +26,12 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, o
     return (
         <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4 flex items-center justify-between">
             <div className="flex items-center space-x-4">
-                <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 font-medium">
-                    {member.avatar_url ? (
-                        <img src={member.avatar_url} alt={member.full_name || 'User'} className="h-10 w-10 rounded-full object-cover" />
-                    ) : (
-                        (member.full_name || 'U').charAt(0).toUpperCase()
-                    )}
+                <div className="h-10 w-10">
+                    <AvatarUploader
+                        userId={member.id}
+                        currentAvatarUrl={member.avatar_url}
+                        onUploadComplete={() => { window.location.reload(); }}
+                    />
                 </div>
                 <div>
                     <h3 className="text-sm font-medium text-slate-900">{member.full_name || 'Unknown User'}</h3>

@@ -1,9 +1,10 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ProtectedRoute: React.FC = () => {
-    const { user, loading } = useAuth();
+    const { user, profile, loading } = useAuth();
+    const location = useLocation();
 
     if (loading) {
         return (
@@ -17,7 +18,19 @@ const ProtectedRoute: React.FC = () => {
         return <Navigate to="/login" replace />;
     }
 
-    // Simplified: If you have a session (created by Admin), you are in.
+    // Status Gate: Redirect Pending users
+    if (profile?.status === 'Pending') {
+        const allowedPaths = ['/pending-approval', '/team'];
+        if (!allowedPaths.includes(location.pathname)) {
+            return <Navigate to="/pending-approval" replace />;
+        }
+    }
+
+    // If Active user tries to go to pending page, send to dashboard
+    if (profile?.status === 'Active' && location.pathname === '/pending-approval') {
+        return <Navigate to="/dashboard" replace />;
+    }
+
     return <Outlet />;
 };
 
