@@ -108,14 +108,7 @@ const TeamMemberCard: React.FC<TeamMemberCardProps> = ({ member, onUpdateRole, o
                                 className="text-red-500 hover:text-red-700 hover:bg-red-50"
                                 onClick={() => {
                                     if (confirm('Are you sure you want to PERMANENTLY delete this user? This action cannot be undone.')) {
-                                        // We need a way to pass this up. 
-                                        // Since we don't have onDelete prop yet, we might need to cast or update props.
-                                        // Actually, let's look at the Props interface first.
-                                        // The user asked to "add an option", so I need to update the parent too.
-                                        // I'll emit a custom event or, better, update the props in the next step.
-                                        // For now, let's assume `onDelete` is passed.
-                                        // WAIT: I need to update the interface first.
-                                        // Let's defer this change to the next tool call where I update the Interface AND the component.
+                                        onDelete(member.id);
                                     }
                                 }}
                             >
