@@ -6,6 +6,7 @@ import { tasksService } from '../../services/tasks';
 import Badge from '../../components/ui/Badge';
 import Button from '../../components/ui/Button';
 import TaskCard from '../../components/tasks/TaskCard';
+import AddTaskModal from '../../components/tasks/AddTaskModal';
 
 const EventDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -15,6 +16,7 @@ const EventDetails: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'overview' | 'tasks' | 'inventory'>('overview');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showAddTaskModal, setShowAddTaskModal] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -24,12 +26,24 @@ const EventDetails: React.FC = () => {
 
     const fetchEventData = async (eventId: string) => {
         try {
-            const [eventData, tasksData] = await Promise.all([
-                eventsService.getEvent(eventId),
-                tasksService.getTasksByEvent(eventId)
-            ]);
-            setEvent(eventData);
-            setTasks(tasksData);
+            // Fetch event details
+            try {
+                const eventData = await eventsService.getEvent(eventId);
+                setEvent(eventData);
+            } catch (eventErr) {
+                console.error('Error fetching event:', eventErr);
+                throw new Error('Failed to load event data');
+            }
+
+            // Fetch tasks (non-blocking for critical UI)
+            try {
+                const tasksData = await tasksService.getTasksByEvent(eventId);
+                setTasks(tasksData);
+            } catch (taskErr) {
+                console.error('Error fetching tasks:', taskErr);
+                // Don't block loading the event if tasks fail
+            }
+
         } catch (err) {
             setError('Failed to load event details.');
             console.error(err);
@@ -135,7 +149,7 @@ const EventDetails: React.FC = () => {
                     <div className="space-y-4">
                         <div className="flex justify-between items-center">
                             <h3 className="text-lg font-medium text-slate-900">Event Tasks</h3>
-                            <Button size="sm" onClick={() => alert('Add Task to Event coming soon')}>+ Add Task</Button>
+                            <Button size="sm" onClick={() => setShowAddTaskModal(true)}>+ Add Task</Button>
                         </div>
                         {tasks.length > 0 ? (
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -151,6 +165,14 @@ const EventDetails: React.FC = () => {
                     <div className="text-slate-500 text-center py-8">Inventory items for this event will be listed here.</div>
                 )}
             </div>
+            {id && (
+                <AddTaskModal
+                    isOpen={showAddTaskModal}
+                    onClose={() => setShowAddTaskModal(false)}
+                    onTaskCreated={() => id && fetchEventData(id)}
+                    eventId={id}
+                />
+            )}
         </div>
     );
 };

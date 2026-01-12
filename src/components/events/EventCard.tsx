@@ -5,9 +5,10 @@ import Badge from '../ui/Badge';
 
 interface EventCardProps {
     event: Event;
+    onDelete?: (id: string) => void;
 }
 
-const EventCard: React.FC<EventCardProps> = ({ event }) => {
+const EventCard: React.FC<EventCardProps> = ({ event, onDelete }) => {
     const statusVariant = {
         Planning: 'default',
         Active: 'success',
@@ -42,12 +43,25 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
                     {event.start_date ? new Date(event.start_date).toLocaleDateString() : 'TBD'}
                 </div>
             </div>
-            <div className="bg-slate-50 px-4 py-4 sm:px-6">
+            <div className="bg-slate-50 px-4 py-4 sm:px-6 flex justify-between items-center">
                 <div className="text-sm">
                     <Link to={`/events/${event.id}`} className="font-medium text-primary hover:text-blue-700">
                         View Details <span aria-hidden="true">&rarr;</span>
                     </Link>
                 </div>
+                {onDelete && (
+                    <button
+                        onClick={(e) => {
+                            e.preventDefault(); // Prevent navigation
+                            if (window.confirm('Are you sure you want to delete this event?')) {
+                                onDelete(event.id);
+                            }
+                        }}
+                        className="text-sm font-medium text-red-600 hover:text-red-900"
+                    >
+                        Delete
+                    </button>
+                )}
             </div>
         </div>
     );

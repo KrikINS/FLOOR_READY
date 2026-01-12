@@ -56,6 +56,40 @@ export const tasksService = {
         return data as Task;
     },
 
+    async createTaskWithInventory(
+        task: Omit<Task, 'id' | 'created_at' | 'profiles' | 'events'>,
+        inventoryIds: string[]
+    ) {
+        // 1. Create Task
+        const { data: taskData, error: taskError } = await supabase
+            .from('tasks')
+            .insert(task)
+            .select()
+            .single();
+
+        if (taskError) throw taskError;
+
+        // 2. Link Inventory
+        if (inventoryIds.length > 0) {
+            const inventoryLinks = inventoryIds.map(invId => ({
+                task_id: taskData.id,
+                inventory_id: invId,
+                quantity_required: 1 // Default quantity
+            }));
+
+            const { error: invError } = await supabase
+                .from('task_inventory')
+                .insert(inventoryLinks);
+
+            if (invError) {
+                console.error('Failed to link inventory:', invError);
+                throw invError;
+            }
+        }
+
+        return taskData as Task;
+    },
+
     async updateTask(id: string, updates: Partial<Task>) {
         const { data, error } = await supabase
             .from('tasks')

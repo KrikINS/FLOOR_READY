@@ -3,11 +3,13 @@ import { tasksService } from '../../services/tasks';
 import type { Task } from '../../types';
 import TaskCard from '../../components/tasks/TaskCard';
 import Button from '../../components/ui/Button';
+import AddTaskModal from '../../components/tasks/AddTaskModal';
 
 const TasksList: React.FC = () => {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
     useEffect(() => {
         fetchTasks();
@@ -42,7 +44,7 @@ const TasksList: React.FC = () => {
                         View and manage all tasks across events.
                     </p>
                 </div>
-                <Button onClick={() => alert('Create Task coming soon')}>
+                <Button onClick={() => setShowCreateModal(true)}>
                     Create Task
                 </Button>
             </div>
@@ -64,6 +66,13 @@ const TasksList: React.FC = () => {
                     ))}
                 </div>
             )}
+
+            <AddTaskModal
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onTaskCreated={fetchTasks}
+            // No eventId passed, so it will allow selecting an event
+            />
         </div>
     );
 };

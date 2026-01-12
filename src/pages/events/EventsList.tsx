@@ -26,6 +26,17 @@ const EventsList: React.FC = () => {
         }
     };
 
+    const handleDelete = async (id: string) => {
+        try {
+            await eventsService.deleteEvent(id);
+            // Refresh list
+            setEvents(events.filter(e => e.id !== id));
+        } catch (err) {
+            console.error(err);
+            alert('Failed to delete event. You may not have permission.');
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-64">
@@ -75,7 +86,7 @@ const EventsList: React.FC = () => {
             ) : (
                 <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {events.map((event) => (
-                        <EventCard key={event.id} event={event} />
+                        <EventCard key={event.id} event={event} onDelete={handleDelete} />
                     ))}
                 </div>
             )}

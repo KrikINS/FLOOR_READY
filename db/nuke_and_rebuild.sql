@@ -122,4 +122,57 @@ DELETE FROM auth.users
 WHERE id = target_user_id;
 END;
 $$;
-SELECT 'WIPE COMPLETE. SYSTEM READY.' as status;
+SELECT 'User Management Reset Complete.' as status;
+-- 6. RESTORE DOMAIN PERMISSIONS (Events, Tasks, Inventory)
+-- These are often dropped when profiles is dropped via CASCADE, so we must restore them.
+-- EVENTS
+DROP POLICY IF EXISTS "Everyone can view events" ON events;
+DROP POLICY IF EXISTS "Admins and Managers can manage events" ON events;
+CREATE POLICY "Everyone can view events" ON events FOR
+SELECT USING (true);
+CREATE POLICY "Admins and Managers can manage events" ON events FOR ALL USING (
+    EXISTS (
+        SELECT 1
+        FROM profiles
+        WHERE id = auth.uid()
+            AND role IN ('Admin', 'Manager')
+    )
+);
+-- TASKS
+DROP POLICY IF EXISTS "Everyone can view tasks" ON tasks;
+DROP POLICY IF EXISTS "Employees can update assigned tasks" ON tasks;
+DROP POLICY IF EXISTS "Admins and Managers can manage tasks" ON tasks;
+CREATE POLICY "Everyone can view tasks" ON tasks FOR
+SELECT USING (true);
+CREATE POLICY "Employees can update assigned tasks" ON tasks FOR
+UPDATE USING (
+        assignee_id = auth.uid()
+        OR EXISTS (
+            SELECT 1
+            FROM profiles
+            WHERE id = auth.uid()
+                AND role IN ('Admin', 'Manager')
+        )
+    );
+CREATE POLICY "Admins and Managers can manage tasks" ON tasks FOR ALL USING (
+    EXISTS (
+        SELECT 1
+        FROM profiles
+        WHERE id = auth.uid()
+            AND role IN ('Admin', 'Manager')
+    )
+);
+-- INVENTORY
+DROP POLICY IF EXISTS "Inventory is viewable by everyone" ON inventory;
+DROP POLICY IF EXISTS "Managers can update stock" ON inventory;
+CREATE POLICY "Inventory is viewable by everyone" ON inventory FOR
+SELECT USING (true);
+CREATE POLICY "Managers can update stock" ON inventory FOR ALL USING (
+    EXISTS (
+        SELECT 1
+        FROM profiles
+        WHERE id = auth.uid()
+            AND role IN ('Admin', 'Manager')
+    )
+);
+SELECT 'SYSTEM FULLY REBUILT: Auth & Domain Logic Ready.' as status;
