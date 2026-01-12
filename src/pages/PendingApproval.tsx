@@ -51,8 +51,8 @@ const PendingApproval: React.FC = () => {
                             View Team Status
                         </Button>
                         <Button
-                            variant="outline"
-                            className="w-full justify-center text-slate-400 border-slate-600 hover:bg-slate-700 hover:text-white"
+                            variant="ghost"
+                            className="w-full justify-center text-slate-400 border border-slate-600 hover:bg-slate-700 hover:text-white"
                             onClick={signOut}
                         >
                             Sign Out

@@ -18,7 +18,7 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({ currentAvatarUrl, userI
     const [loading, setLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
 
-    const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    const onCropComplete = useCallback((_: any, croppedAreaPixels: any) => {
         setCroppedAreaPixels(croppedAreaPixels);
     }, []);
 
@@ -48,7 +48,7 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({ currentAvatarUrl, userI
 
             // Upload to Supabase
             const filename = `${userId}-${Date.now()}.jpg`;
-            const { data, error } = await supabase.storage
+            const { error } = await supabase.storage
                 .from('avatars')
                 .upload(filename, croppedImageBlob, {
                     contentType: 'image/jpeg',
@@ -158,7 +158,6 @@ const AvatarUploader: React.FC<AvatarUploaderProps> = ({ currentAvatarUrl, userI
                     </label>
                 </div>
             </div>
-            {/* <p className="text-xs text-slate-500">Click to upload</p> */}
         </div>
     );
 };
