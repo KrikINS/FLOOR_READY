@@ -115,10 +115,17 @@ const TeamList: React.FC = () => {
                     <h1 className="text-2xl font-bold text-slate-900">User Management</h1>
                     <p className="text-slate-500">Create, manage, and assign roles to your team.</p>
                 </div>
+                {/* REMOVED: Use Self-Registration Flow instead to ensure correct password hashing
                 {canAddUser && (
                     <Button onClick={() => setIsAddUserModalOpen(true)}>
                         + Add New User
                     </Button>
+                )}
+                */}
+                {canAddUser && (
+                    <div className="text-sm text-slate-500 italic">
+                        Invite users to register at /register
+                    </div>
                 )}
             </div>
 
