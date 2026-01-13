@@ -19,9 +19,10 @@ const TasksList: React.FC = () => {
         try {
             const data = await tasksService.getTasks();
             setTasks(data);
-        } catch (err) {
-            setError('Failed to load tasks.');
-            console.error(err);
+        } catch (err: any) {
+            console.error('Error fetching tasks details:', err);
+            // Show the actual error message from Supabase/Network
+            setError(err.message || 'Failed to load tasks.');
         } finally {
             setLoading(false);
         }

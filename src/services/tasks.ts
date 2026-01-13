@@ -61,13 +61,17 @@ export const tasksService = {
         inventoryIds: string[]
     ) {
         // 1. Create Task
+        console.log('Creating task payload:', task);
         const { data: taskData, error: taskError } = await supabase
             .from('tasks')
             .insert(task)
             .select()
             .single();
 
-        if (taskError) throw taskError;
+        if (taskError) {
+            console.error('Supabase Create Task Error:', taskError);
+            throw taskError;
+        }
 
         // 2. Link Inventory
         if (inventoryIds.length > 0) {

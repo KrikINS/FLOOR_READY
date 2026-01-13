@@ -101,9 +101,11 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskCrea
             setSelectedInventoryIds([]);
             // Only reset event selection if it wasn't fixed by prop
             if (!eventId) setSelectedEventId('');
-        } catch (err) {
-            console.error(err);
-            setError('Failed to create task');
+        } catch (err: any) {
+            console.error('Task creation failed:', err);
+            // Surface the specific error message if available
+            const errorMessage = err.message || err.error_description || 'Failed to create task';
+            setError(`Error: ${errorMessage}`);
         } finally {
             setLoading(false);
         }
