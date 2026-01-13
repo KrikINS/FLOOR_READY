@@ -65,6 +65,7 @@ function AppContent() {
 
           <Route path="/team" element={<TeamList />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/:id" element={<Profile />} />
           <Route path="*" element={<Placeholder title="404 Not Found" />} />
         </Route>
       </Route>

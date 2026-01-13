@@ -1,27 +1,56 @@
+
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../services/supabase';
 import Button from '../components/ui/Button';
 import ErrorBoundary from '../components/ErrorBoundary';
+import type { Profile as ProfileType } from '../types';
 
 const COUNTRY_CODES = [
+    // GCC
+    { code: '+971', country: 'UAE' },
+    { code: '+966', country: 'Saudi Arabia' },
+    { code: '+973', country: 'Bahrain' },
+    { code: '+965', country: 'Kuwait' },
+    { code: '+968', country: 'Oman' },
+    { code: '+974', country: 'Qatar' },
+
+    // Indian Subcontinent
+    { code: '+91', country: 'India' },
+    { code: '+92', country: 'Pakistan' },
+    { code: '+880', country: 'Bangladesh' },
+    { code: '+94', country: 'Sri Lanka' },
+    { code: '+977', country: 'Nepal' },
+
+    // Middle East / North Africa
+    { code: '+20', country: 'Egypt' },
+    { code: '+962', country: 'Jordan' },
+    { code: '+961', country: 'Lebanon' },
+    { code: '+964', country: 'Iraq' },
+    { code: '+967', country: 'Yemen' },
+    { code: '+90', country: 'Turkey' },
+
+    // Western / Global
     { code: '+1', country: 'US/CA' },
     { code: '+44', country: 'UK' },
-    { code: '+91', country: 'IN' },
-    { code: '+92', country: 'PK' },
-    { code: '+971', country: 'AE' },
-    { code: '+61', country: 'AU' },
-    { code: '+86', country: 'CN' },
-    { code: '+33', country: 'FR' },
-    { code: '+49', country: 'DE' },
-    { code: '+81', country: 'JP' },
-    { code: '+966', country: 'SA' },
+    { code: '+61', country: 'Australia' },
+    { code: '+33', country: 'France' },
+    { code: '+49', country: 'Germany' },
+    { code: '+86', country: 'China' },
+    { code: '+81', country: 'Japan' },
 ];
 
 const Profile: React.FC = () => {
-    const { profile, user, refreshProfile } = useAuth();
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+    const { profile: currentProfile, user: currentUser, refreshProfile: refreshCurrentProfile } = useAuth();
+
+    const [targetProfile, setTargetProfile] = useState<ProfileType | null>(null);
+    const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+
     const [isEditing, setIsEditing] = useState(false);
-    const [loading, setLoading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -33,37 +62,85 @@ const Profile: React.FC = () => {
         full_name: '',
     });
 
+    // 1. Fetch Target Profile Logic
     useEffect(() => {
-        if (profile) {
+        const fetchTargetProfile = async () => {
+            setIsLoadingProfile(true);
+            try {
+                // Determine target ID
+                const targetId = id || currentUser?.id;
+
+                if (!targetId) {
+                    setIsLoadingProfile(false);
+                    return;
+                }
+
+                // Optimization: If viewing self, use AuthContext data
+                if (targetId === currentUser?.id && currentProfile) {
+                    setTargetProfile(currentProfile);
+                    setIsLoadingProfile(false);
+                    return;
+                }
+
+                // Else fetch from DB
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', targetId)
+                    .single();
+
+                if (error) throw error;
+                setTargetProfile(data as ProfileType);
+
+            } catch (err) {
+                console.error('Error fetching profile:', err);
+                setMessage({ type: 'error', text: 'Could not load profile.' });
+            } finally {
+                setIsLoadingProfile(false);
+            }
+        };
+
+        fetchTargetProfile();
+    }, [id, currentUser, currentProfile]);
+
+    // 2. Initialize Form Data when Target Profile Changes
+    useEffect(() => {
+        if (targetProfile) {
             setFormData({
-                full_name: profile.full_name || '',
+                full_name: targetProfile.full_name || '',
             });
 
             // Parse existing phone number
-            if (profile.phone) {
-                // Simple heuristic: check if it starts with a known code
-                const foundCode = COUNTRY_CODES.find(c => profile.phone?.startsWith(c.code));
+            if (targetProfile.phone) {
+                const foundCode = COUNTRY_CODES.find(c => targetProfile.phone?.startsWith(c.code));
                 if (foundCode) {
                     setCountryCode(foundCode.code);
-                    setLocalNumber(profile.phone.slice(foundCode.code.length));
+                    setLocalNumber(targetProfile.phone.slice(foundCode.code.length));
                 } else {
-                    // Fallback or legacy format
-                    setLocalNumber(profile.phone);
+                    setLocalNumber(targetProfile.phone);
                 }
             } else {
                 setLocalNumber('');
             }
         }
-    }, [profile]);
+    }, [targetProfile]);
+
+    // 3. Permission Check
+    // Can edit if: Own Profile OR (Current User is Admin/Manager)
+    const canEdit = React.useMemo(() => {
+        if (!currentProfile || !targetProfile) return false;
+        if (currentProfile.id === targetProfile.id) return true; // Own profile
+        return ['Admin', 'Manager'].includes(currentProfile.role || '');
+    }, [currentProfile, targetProfile]);
+
 
     const handleUpdate = async () => {
-        if (!user) return;
-        setLoading(true);
+        if (!targetProfile) return;
+        setIsSaving(true);
         setMessage(null);
 
         try {
-            // Combine phone
-            const fullPhone = localNumber ? `${countryCode}${localNumber}` : null;
+            const fullPhone = localNumber ? `${countryCode}${localNumber} ` : null;
 
             const { error } = await supabase
                 .from('profiles')
@@ -72,22 +149,31 @@ const Profile: React.FC = () => {
                     phone: fullPhone,
                     updated_at: new Date().toISOString(),
                 })
-                .eq('id', user.id);
+                .eq('id', targetProfile.id);
 
             if (error) throw error;
 
-            await refreshProfile();
+            // If updating self, refresh global context
+            if (targetProfile.id === currentUser?.id) {
+                await refreshCurrentProfile();
+            } else {
+                // Manually update local state if looking at someone else
+                setTargetProfile(prev => prev ? ({ ...prev, full_name: formData.full_name, phone: fullPhone }) : null);
+            }
+
             setMessage({ type: 'success', text: 'Profile updated successfully.' });
             setIsEditing(false);
         } catch (err: any) {
             console.error('Error updating profile:', err);
             setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
         } finally {
-            setLoading(false);
+            setIsSaving(false);
         }
     };
 
     const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!targetProfile) return;
+
         try {
             setMessage(null);
             if (!event.target.files || event.target.files.length === 0) {
@@ -95,21 +181,19 @@ const Profile: React.FC = () => {
             }
             const file = event.target.files[0];
             const fileExt = file.name.split('.').pop();
-            const fileName = `${user?.id}-${Math.random()}.${fileExt}`;
-            const filePath = `${fileName}`;
+            const fileName = `${targetProfile.id} -${Math.random()}.${fileExt} `;
+            const filePath = `${fileName} `;
 
-            setLoading(true);
+            setIsSaving(true);
 
-            // 1. Upload to 'avatars' bucket
+            // 1. Upload
             const { error: uploadError } = await supabase.storage
                 .from('avatars')
                 .upload(filePath, file);
 
-            if (uploadError) {
-                throw uploadError;
-            }
+            if (uploadError) throw uploadError;
 
-            // 2. Get Public URL
+            // 2. Get URL
             const { data } = supabase.storage
                 .from('avatars')
                 .getPublicUrl(filePath);
@@ -123,73 +207,103 @@ const Profile: React.FC = () => {
                     avatar_url: publicUrl,
                     updated_at: new Date().toISOString(),
                 })
-                .eq('id', user?.id);
+                .eq('id', targetProfile.id);
 
             if (updateError) throw updateError;
 
-            await refreshProfile();
+            // Refetch
+            if (targetProfile.id === currentUser?.id) {
+                await refreshCurrentProfile();
+            } else {
+                setTargetProfile(prev => prev ? ({ ...prev, avatar_url: publicUrl }) : null);
+            }
+
             setMessage({ type: 'success', text: 'Avatar updated successfully.' });
 
         } catch (error: any) {
             console.error('Error uploading avatar:', error);
             setMessage({ type: 'error', text: error.message || 'Error uploading avatar.' });
         } finally {
-            setLoading(false);
+            setIsSaving(false);
         }
     };
 
-    if (!profile) return <div>Loading profile...</div>;
+    if (isLoadingProfile) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            </div>
+        );
+    }
+
+    if (!targetProfile) {
+        return <div className="text-center py-10">Profile not found.</div>;
+    }
 
     return (
         <ErrorBoundary>
             <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+                {/* Back Button if viewing another profile */}
+                {id && (
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="mb-4 text-sm text-slate-500 hover:text-slate-700 flex items-center gap-1"
+                    >
+                        ← Back
+                    </button>
+                )}
+
                 <div className="bg-white shadow rounded-lg overflow-hidden">
                     {/* Header / Avatar Section */}
                     <div className="bg-slate-50 px-6 py-8 border-b border-slate-200 flex flex-col items-center sm:flex-row sm:items-center sm:justify-between gap-6">
                         <div className="flex items-center gap-6">
                             <div className="relative group">
                                 <div className="h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md bg-slate-200">
-                                    {profile.avatar_url ? (
-                                        <img src={profile.avatar_url} alt={profile.full_name || 'Avatar'} className="h-full w-full object-cover" />
+                                    {targetProfile.avatar_url ? (
+                                        <img src={targetProfile.avatar_url} alt={targetProfile.full_name || 'Avatar'} className="h-full w-full object-cover" />
                                     ) : (
                                         <div className="h-full w-full flex items-center justify-center text-slate-400">
                                             <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
                                         </div>
                                     )}
-                                    {/* Upload Overlay */}
-                                    <label
-                                        htmlFor="avatar-upload"
-                                        className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full"
-                                    >
-                                        <span className="text-white text-xs font-medium">Change</span>
-                                    </label>
-                                    <input
-                                        type="file"
-                                        id="avatar-upload"
-                                        ref={fileInputRef}
-                                        className="hidden"
-                                        accept="image/*"
-                                        onChange={handleAvatarUpload}
-                                        disabled={loading}
-                                    />
+
+                                    {isEditing && (
+                                        <>
+                                            <label
+                                                htmlFor="avatar-upload"
+                                                className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-full"
+                                            >
+                                                <span className="text-white text-xs font-medium">Change</span>
+                                            </label>
+                                            <input
+                                                type="file"
+                                                id="avatar-upload"
+                                                ref={fileInputRef}
+                                                className="hidden"
+                                                accept="image/*"
+                                                onChange={handleAvatarUpload}
+                                                disabled={isSaving}
+                                            />
+                                        </>
+                                    )}
                                 </div>
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-slate-900">{profile.full_name || 'User'}</h1>
+                                <h1 className="text-2xl font-bold text-slate-900">{targetProfile.full_name || 'User'}</h1>
                                 <div className="flex items-center gap-2 mt-1">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                                        ${profile.role === 'Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>
-                                        {profile.role}
+                                    <span className={`inline - flex items - center px - 2.5 py - 0.5 rounded - full text - xs font - medium capitalize
+                                        ${targetProfile.role === 'Admin' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'} `}>
+                                        {targetProfile.role}
                                     </span>
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                                        ${profile.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
-                                        {profile.status}
+                                    <span className={`inline - flex items - center px - 2.5 py - 0.5 rounded - full text - xs font - medium capitalize
+                                        ${targetProfile.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'} `}>
+                                        {targetProfile.status}
                                     </span>
                                 </div>
                             </div>
                         </div>
 
-                        {!isEditing && (
+                        {canEdit && !isEditing && (
                             <Button onClick={() => setIsEditing(true)} variant="secondary">
                                 Edit Profile
                             </Button>
@@ -199,7 +313,7 @@ const Profile: React.FC = () => {
                     {/* Form Section */}
                     <div className="px-6 py-8">
                         {message && (
-                            <div className={`mb-6 p-4 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                            <div className={`mb - 6 p - 4 rounded - md ${message.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'} `}>
                                 {message.text}
                             </div>
                         )}
@@ -216,7 +330,10 @@ const Profile: React.FC = () => {
                                         type="text"
                                         disabled
                                         className="flex-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-slate-300 bg-slate-50 text-slate-500 cursor-not-allowed"
-                                        value={user?.email || ''}
+                                        // Note: Email is not on profiles table by default in our type, checking if it's there or we use targetProfile.id to lookup auth metadata but we can't always. 
+                                        // For now, if viewing self use currentUser.email. If other, we might not have email in 'profiles' unless we added it or joined it.
+                                        // The current type definition has optional email.
+                                        value={targetProfile.email || (targetProfile.id === currentUser?.id ? currentUser?.email : 'Hidden')}
                                     />
                                 </div>
                                 <p className="mt-1 text-xs text-slate-500">Email cannot be changed.</p>
@@ -229,8 +346,10 @@ const Profile: React.FC = () => {
                                     <input
                                         type="text"
                                         disabled={!isEditing}
-                                        className={`shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-slate-300 rounded-md 
-                                            ${!isEditing ? 'bg-slate-50 text-slate-500' : ''}`}
+                                        className={`block w-full sm:text-sm rounded-md transition-all duration-200
+                                            ${isEditing
+                                                ? 'shadow-sm border-slate-300 focus:ring-indigo-500 focus:border-indigo-500'
+                                                : 'border-transparent shadow-none bg-transparent text-slate-900 font-medium px-0'}`}
                                         value={formData.full_name}
                                         onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                                     />
@@ -240,15 +359,17 @@ const Profile: React.FC = () => {
                             {/* Phone Input with Country Code */}
                             <div className="sm:col-span-4">
                                 <label htmlFor="phone-number" className="block text-sm font-medium text-slate-700">Phone Number</label>
-                                <div className="mt-1 flex rounded-md shadow-sm">
+                                <div className={`mt-1 flex rounded-md transition-all duration-200 ${isEditing ? 'shadow-sm' : ''}`}>
                                     <div className="relative">
                                         <select
                                             aria-label="Country Code"
                                             disabled={!isEditing}
                                             value={countryCode}
                                             onChange={(e) => setCountryCode(e.target.value)}
-                                            className={`h-full rounded-l-md border-r-0 border-slate-300 bg-slate-50 py-0 pl-3 pr-7 text-slate-500 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm 
-                                                ${!isEditing ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                                            className={`h-full rounded-l-md border-r-0 py-0 pl-3 pr-7 sm:text-sm transition-all duration-200
+                                                ${isEditing
+                                                    ? 'border-slate-300 bg-slate-50 text-slate-500 focus:ring-indigo-500 focus:border-indigo-500 cursor-pointer'
+                                                    : 'border-transparent bg-transparent text-slate-900 font-medium px-0 appearance-none cursor-default'}`}
                                         >
                                             {COUNTRY_CODES.map((country) => (
                                                 <option key={country.code} value={country.code}>
@@ -261,8 +382,10 @@ const Profile: React.FC = () => {
                                         type="tel"
                                         id="phone-number"
                                         disabled={!isEditing}
-                                        className={`flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm border-slate-300
-                                            ${!isEditing ? 'bg-slate-50 text-slate-500' : ''}`}
+                                        className={`flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md sm:text-sm transition-all duration-200
+                                            ${isEditing
+                                                ? 'border-slate-300 focus:ring-indigo-500 focus:border-indigo-500'
+                                                : 'border-transparent bg-transparent text-slate-900 font-medium px-2 shadow-none'}`}
                                         placeholder="555 123 4567"
                                         value={localNumber}
                                         onChange={(e) => setLocalNumber(e.target.value.replace(/\D/g, ''))} // Only numbers
@@ -277,11 +400,11 @@ const Profile: React.FC = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider">User ID</label>
-                                        <p className="mt-1 text-sm text-slate-900 font-mono bg-slate-50 p-2 rounded border border-slate-100">{profile.id}</p>
+                                        <p className="mt-1 text-sm text-slate-900 font-mono bg-slate-50 p-2 rounded border border-slate-100">{targetProfile.id}</p>
                                     </div>
                                     <div>
-                                        <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider">Account Created</label>
-                                        <p className="mt-1 text-sm text-slate-900">{new Date(user?.created_at || '').toLocaleDateString()}</p>
+                                        <label className="block text-xs font-medium text-slate-500 uppercase tracking-wider">Last Updated</label>
+                                        <p className="mt-1 text-sm text-slate-900">{targetProfile.updated_at ? new Date(targetProfile.updated_at).toLocaleDateString() : 'Never'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -295,32 +418,32 @@ const Profile: React.FC = () => {
                                     onClick={() => {
                                         setIsEditing(false);
                                         // Reset form
-                                        if (profile) {
-                                            setFormData({ full_name: profile.full_name || '' });
+                                        if (targetProfile) {
+                                            setFormData({ full_name: targetProfile.full_name || '' });
                                             // Reset phone state
-                                            if (profile.phone) {
-                                                const foundCode = COUNTRY_CODES.find(c => profile.phone?.startsWith(c.code));
+                                            if (targetProfile.phone) {
+                                                const foundCode = COUNTRY_CODES.find(c => targetProfile.phone?.startsWith(c.code));
                                                 if (foundCode) {
                                                     setCountryCode(foundCode.code);
-                                                    setLocalNumber(profile.phone.slice(foundCode.code.length));
+                                                    setLocalNumber(targetProfile.phone.slice(foundCode.code.length));
                                                 } else {
-                                                    setLocalNumber(profile.phone);
+                                                    setLocalNumber(targetProfile.phone);
                                                 }
                                             } else {
                                                 setLocalNumber('');
                                             }
                                         }
                                     }}
-                                    disabled={loading}
+                                    disabled={isSaving}
                                 >
                                     Cancel
                                 </Button>
                                 <Button
                                     variant="primary"
                                     onClick={handleUpdate}
-                                    disabled={loading}
+                                    disabled={isSaving}
                                 >
-                                    {loading ? 'Saving...' : 'Save Changes'}
+                                    {isSaving ? 'Saving...' : 'Save Changes'}
                                 </Button>
                             </div>
                         )}
