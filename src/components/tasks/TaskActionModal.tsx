@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import type { Task, TaskStatus, Profile, TaskAttachment } from '../../types';
 import Button from '../ui/Button';
 import { tasksService } from '../../services/tasks';
@@ -36,9 +36,19 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
     const [teamMembers, setTeamMembers] = useState<Profile[]>([]);
     const [isReassigning, setIsReassigning] = useState(false);
 
+    // Fulfillment State
+    const [fulfillmentData, setFulfillmentData] = useState({
+        actual_cost: task.actual_cost?.toString() || '',
+        vendor_name: task.vendor_name || '',
+        vendor_address: task.vendor_address || '',
+        vendor_contact: task.vendor_contact || '',
+    });
+
     // Permission Logic
     const isAssignee = currentUser?.id === task.assignee_id;
     const isAdminOrManager = currentUser?.role === 'Admin' || currentUser?.role === 'Manager';
+    const canEditFulfillment = isAssignee || isAdminOrManager;
+
     const currentStepIndex = STEPS.indexOf(task.status);
     // Handle case where existing task might be 'In Review' (treat as Acknowledged index for visual progress)
     const normalizedStepIndex = task.status === 'In Review' ? STEPS.indexOf('Acknowledged') : currentStepIndex;
@@ -49,14 +59,14 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
     const canApprove = isAdminOrManager && task.status === 'Awaiting Approval';
     const canMoveForward = isAssignee && !isLockedForAssignee && nextStep;
 
-    const loadAttachments = async () => {
+    const loadAttachments = useCallback(async () => {
         try {
             const data = await attachmentsService.getAttachments(task.id);
             setAttachments(data);
         } catch (err) {
             console.error('Failed to load attachments', err);
         }
-    };
+    }, [task.id]);
 
     useEffect(() => {
         const loadTeam = async () => {
@@ -73,8 +83,15 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
         if (isOpen) {
             loadAttachments();
             loadTeam();
+            // Reset fulfillment state on open
+            setFulfillmentData({
+                actual_cost: task.actual_cost?.toString() || '',
+                vendor_name: task.vendor_name || '',
+                vendor_address: task.vendor_address || '',
+                vendor_contact: task.vendor_contact || '',
+            });
         }
-    }, [isOpen, task.id, isAdminOrManager]);
+    }, [isOpen, loadAttachments, isAdminOrManager, task.actual_cost, task.vendor_name, task.vendor_address, task.vendor_contact]);
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -86,11 +103,31 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
             const context = task.status === 'In Progress' ? 'submission' : 'comment';
             await attachmentsService.uploadAttachment(file, task.id, currentUser.id, context);
             await loadAttachments();
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Upload failed:', err);
-            setError(err.message || 'Upload failed');
+            setError(err instanceof Error ? err.message : 'Upload failed');
         } finally {
             setUploading(false);
+        }
+    };
+
+    // Save Fulfillment info separately or with status change?
+    // Let's create a specific handler for saving details
+    const handleSaveFulfillment = async () => {
+        setLoading(true);
+        try {
+            await tasksService.updateTask(task.id, {
+                actual_cost: fulfillmentData.actual_cost ? Number(fulfillmentData.actual_cost) : null,
+                vendor_name: fulfillmentData.vendor_name,
+                vendor_address: fulfillmentData.vendor_address,
+                vendor_contact: fulfillmentData.vendor_contact,
+            });
+            onTaskUpdated(); // Refresh parent
+        } catch (err: unknown) {
+            console.error('Failed to save details:', err);
+            setError(err instanceof Error ? err.message : 'Failed to save details');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -98,27 +135,36 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
 
     const handleAction = async (targetStatus?: TaskStatus) => {
         const statusToSet = targetStatus || nextStep;
+
+        // Auto-save details if moving to 'Completed' or 'Awaiting Approval' and they are filled?
+        // For now, let's just save the status. Ideally we valid fields here.
+        if ((statusToSet === 'Completed' || statusToSet === 'Awaiting Approval') && (!fulfillmentData.actual_cost && !fulfillmentData.vendor_name)) {
+            // Optional: warn user? For now let's allow it but we could enforce it.
+        }
         if (!statusToSet) return;
+        const validStatus = statusToSet; // Capture for type safety
 
         setLoading(true);
         setError(null);
 
         try {
-            const updates: Partial<Task> = { status: statusToSet };
+            const updates: Partial<Task> = { status: validStatus };
             const now = new Date().toISOString();
 
-            if (statusToSet === 'Acknowledged') {
+            if (validStatus === 'Acknowledged') {
                 updates.acknowledged_at = now;
-            } else if (statusToSet === 'Completed') {
+            } else if (validStatus === 'In Progress') {
+                updates.started_at = now;
+            } else if (validStatus === 'Completed') {
                 updates.completed_at = now;
             }
 
             await tasksService.updateTask(task.id, updates);
             onTaskUpdated();
             onClose();
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to update task:', err);
-            setError(err.message || 'Failed to update task status');
+            setError(err instanceof Error ? err.message : 'Failed to update task status');
         } finally {
             setLoading(false);
         }
@@ -130,9 +176,9 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
             await tasksService.updateTask(task.id, { assignee_id: newAssigneeId });
             onTaskUpdated();
             setIsReassigning(false);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Failed to reassign:', err);
-            setError(err.message);
+            setError(err instanceof Error ? err.message : 'Failed to reassign');
         } finally {
             setLoading(false);
         }
@@ -223,8 +269,10 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                             {/* Upload Input - Visibility Restricted */}
                             {canUpload && (
                                 <div className="mt-2">
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">Upload New (Images/Office, Max 10MB)</label>
+                                    <label htmlFor="task-attachment-upload" className="block text-xs font-medium text-gray-700 mb-1">Upload New (Images/Office, Max 10MB)</label>
                                     <input
+                                        id="task-attachment-upload"
+                                        title="Upload attachment"
                                         type="file"
                                         onChange={handleFileUpload}
                                         disabled={uploading}
@@ -239,6 +287,78 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                                     {uploading && <p className="text-xs text-blue-600 mt-1">Uploading...</p>}
                                 </div>
                             )}
+                        </div>
+
+                        {/* Fulfillment Details Section */}
+                        <div className="mt-6 pt-6 border-t border-slate-200">
+                            <h4 className="text-sm font-bold text-gray-900 mb-4">Fulfillment Details</h4>
+                            <div className="grid grid-cols-1 gap-4">
+                                {/* Cost */}
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-500 uppercase">Actual Cost (AED)</label>
+                                    <input
+                                        type="number"
+                                        disabled={!canEditFulfillment}
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-500"
+                                        placeholder="0.00"
+                                        value={fulfillmentData.actual_cost}
+                                        onChange={(e) => setFulfillmentData({ ...fulfillmentData, actual_cost: e.target.value })}
+                                    />
+                                </div>
+
+                                {/* Vendor Name */}
+                                <div>
+                                    <label className="block text-xs font-medium text-slate-500 uppercase">Vendor / Service Provider Name</label>
+                                    <input
+                                        type="text"
+                                        disabled={!canEditFulfillment}
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-500"
+                                        placeholder="Company Name"
+                                        value={fulfillmentData.vendor_name}
+                                        onChange={(e) => setFulfillmentData({ ...fulfillmentData, vendor_name: e.target.value })}
+                                    />
+                                </div>
+
+                                {/* Vendor Details Grid */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-500 uppercase">Vendor Contact</label>
+                                        <input
+                                            type="text"
+                                            disabled={!canEditFulfillment}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-500"
+                                            placeholder="+971..."
+                                            value={fulfillmentData.vendor_contact}
+                                            onChange={(e) => setFulfillmentData({ ...fulfillmentData, vendor_contact: e.target.value })}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-500 uppercase">Address / Location</label>
+                                        <input
+                                            type="text"
+                                            disabled={!canEditFulfillment}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-500"
+                                            placeholder="Location"
+                                            value={fulfillmentData.vendor_address}
+                                            onChange={(e) => setFulfillmentData({ ...fulfillmentData, vendor_address: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Save Button for Fulfillment */}
+                                {canEditFulfillment && (
+                                    <div className="flex justify-end mt-2">
+                                        <Button
+                                            variant="secondary"
+                                            size="sm"
+                                            onClick={handleSaveFulfillment}
+                                            isLoading={loading}
+                                        >
+                                            Save Details
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <div className="bg-slate-50 p-3 rounded-md mb-4 text-sm text-slate-600">
@@ -256,6 +376,14 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                                         {new Date(task.created_at).toLocaleString()}
                                     </span>
                                 </div>
+                                {task.started_at && (
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">Started:</span>
+                                        <span className="font-medium text-gray-900">
+                                            {new Date(task.started_at).toLocaleString()}
+                                        </span>
+                                    </div>
+                                )}
                                 <div className="flex justify-between">
                                     <span className="text-gray-500">Deadline:</span>
                                     <span className={`font-medium ${task.deadline && new Date(task.deadline) < new Date() ? 'text-red-600' : 'text-gray-900'}`}>
@@ -273,7 +401,7 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                                 {task.completed_at && (
                                     <div className="flex justify-between">
                                         <span className="text-green-600">Completed:</span>
-                                        <span className="font-medium text-gray-900">
+                                        <span className="font-medium text-green-600">
                                             {new Date(task.completed_at).toLocaleString()}
                                         </span>
                                     </div>
@@ -312,6 +440,7 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                                     {isReassigning ? (
                                         <div className="flex items-center gap-2">
                                             <select
+                                                title="Reassign to team member"
                                                 className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-1.5"
                                                 onChange={(e) => handleReassign(e.target.value)}
                                                 defaultValue=""
@@ -374,8 +503,8 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

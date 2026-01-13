@@ -11,6 +11,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import PendingApproval from './pages/PendingApproval';
 import Dashboard from './pages/Dashboard';
+import ForgotPassword from './pages/ForgotPassword';
+import UpdatePassword from './pages/UpdatePassword';
 
 
 import EventsList from './pages/events/EventsList';
@@ -43,6 +45,8 @@ function AppContent() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/update-password" element={<UpdatePassword />} />
       <Route path="/register" element={<Register />} />
       <Route path="/debug-connection" element={<DebugConnection />} />
       <Route path="/pending-approval" element={<PendingApproval />} />

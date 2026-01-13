@@ -5,6 +5,7 @@ import TeamMemberCard from '../../components/team/TeamMemberCard';
 import AddUserModal from '../../components/team/AddUserModal';
 import Button from '../../components/ui/Button';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../services/supabase';
 
 const TeamList: React.FC = () => {
     const { user: currentUser } = useAuth();
@@ -101,6 +102,19 @@ const TeamList: React.FC = () => {
         }
     };
 
+    const handleResetPassword = async (email: string) => {
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`,
+            });
+            if (error) throw error;
+            alert(`Password reset email sent to ${email}`);
+        } catch (err: any) {
+            console.error('Failed to send reset email:', err);
+            alert('Failed to send reset email: ' + err.message);
+        }
+    };
+
     // Use robust role check from metadata if available (from our new AuthContext)
     // fallback to fetched profile
     // HOTFIX: Hardcode owner email to always be Admin to prevent lockout
@@ -138,6 +152,7 @@ const TeamList: React.FC = () => {
                         onUpdateRole={handleUpdateRole}
                         onUpdateStatus={handleUpdateStatus}
                         onDelete={handleDeleteUser}
+                        onResetPassword={handleResetPassword}
                     />
                 ))}
             </div>

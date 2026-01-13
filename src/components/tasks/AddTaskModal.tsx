@@ -21,6 +21,8 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskCrea
     const [assigneeId, setAssigneeId] = useState('');
     const [priority, setPriority] = useState<TaskPriority>('Medium');
     const [deadline, setDeadline] = useState('');
+    const [customId, setCustomId] = useState('');
+    const [quantityRequired, setQuantityRequired] = useState<number | ''>('');
     const [selectedInventoryIds, setSelectedInventoryIds] = useState<string[]>([]);
 
     // Attachment state
@@ -94,6 +96,8 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskCrea
                 priority,
                 status: 'Pending',
                 deadline: deadline ? new Date(deadline).toISOString() : null,
+                custom_id: customId || null,
+                quantity_required: quantityRequired === '' ? null : Number(quantityRequired),
             }, selectedInventoryIds);
 
             // 2. Upload Attachment if present
@@ -173,6 +177,18 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskCrea
                             )}
 
                             <div>
+                                <label htmlFor="task-custom-id" className="block text-sm font-medium text-slate-700">Task ID (Optional)</label>
+                                <input
+                                    id="task-custom-id"
+                                    type="text"
+                                    className="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                                    value={customId}
+                                    onChange={e => setCustomId(e.target.value)}
+                                    placeholder="e.g. TASK-1001"
+                                />
+                            </div>
+
+                            <div>
                                 <label htmlFor="task-title" className="block text-sm font-medium text-slate-700">Title</label>
                                 <input
                                     id="task-title"
@@ -192,6 +208,19 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskCrea
                                     rows={3}
                                     value={description}
                                     onChange={e => setDescription(e.target.value)}
+                                />
+                            </div>
+
+                            <div>
+                                <label htmlFor="task-quantity" className="block text-sm font-medium text-slate-700">Quantity Required</label>
+                                <input
+                                    id="task-quantity"
+                                    type="number"
+                                    min="0"
+                                    className="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                                    value={quantityRequired}
+                                    onChange={e => setQuantityRequired(e.target.value === '' ? '' : parseInt(e.target.value))}
+                                    placeholder="e.g. 100"
                                 />
                             </div>
 

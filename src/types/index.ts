@@ -36,9 +36,18 @@ export interface Task {
     deadline: string | null;
     created_at: string;
     acknowledged_at?: string | null;
+    started_at?: string | null;
     completed_at?: string | null;
     profiles?: Profile | null; // For joined assignee query
     events?: Event | null; // For joined event query
+
+    // New Fields
+    custom_id?: string | null;
+    quantity_required?: number | null;
+    actual_cost?: number | null;
+    vendor_name?: string | null;
+    vendor_address?: string | null;
+    vendor_contact?: string | null;
 }
 
 export interface InventoryItem {
