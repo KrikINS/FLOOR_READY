@@ -1,6 +1,8 @@
 
 
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import Profile from './pages/Profile';
+
 import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
@@ -9,6 +11,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import PendingApproval from './pages/PendingApproval';
 import Dashboard from './pages/Dashboard';
+
 
 import EventsList from './pages/events/EventsList';
 import NewEvent from './pages/events/NewEvent';
@@ -61,7 +64,7 @@ function AppContent() {
           <Route path="/inventory/new" element={<NewItem />} />
 
           <Route path="/team" element={<TeamList />} />
-          <Route path="/profile" element={<Placeholder title="Profile" />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="*" element={<Placeholder title="404 Not Found" />} />
         </Route>
       </Route>

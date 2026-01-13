@@ -1,17 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
 import type { Session, User } from '@supabase/supabase-js';
-
-// Define Profile Interface
-export interface Profile {
-    id: string;
-    email: string;
-    full_name?: string;
-    role: string;
-    status: string;
-    phone?: string;
-    avatar_url?: string;
-}
+import type { Profile } from '../types';
 
 interface AuthContextType {
     session: Session | null;

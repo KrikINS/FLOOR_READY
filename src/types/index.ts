@@ -14,6 +14,7 @@ export interface Event {
 export interface Profile {
     id: string;
     full_name: string | null;
+    email?: string | null;
     phone: string | null;
     role: 'Admin' | 'Manager' | 'Staff' | null;
     status: 'Pending' | 'Active' | 'Suspended' | null;
