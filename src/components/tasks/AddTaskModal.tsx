@@ -3,6 +3,7 @@ import { tasksService } from '../../services/tasks';
 import { teamService } from '../../services/team';
 import { inventoryService } from '../../services/inventory';
 import { eventsService } from '../../services/events';
+import { attachmentsService } from '../../services/attachments';
 import type { Profile, InventoryItem, TaskPriority, Event } from '../../types';
 import Button from '../ui/Button';
 
@@ -11,15 +12,19 @@ interface AddTaskModalProps {
     onClose: () => void;
     onTaskCreated: () => void;
     eventId?: string;
+    currentUser?: Profile | null;
 }
 
-const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskCreated, eventId }) => {
+const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskCreated, eventId, currentUser }) => {
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [assigneeId, setAssigneeId] = useState('');
     const [priority, setPriority] = useState<TaskPriority>('Medium');
     const [deadline, setDeadline] = useState('');
     const [selectedInventoryIds, setSelectedInventoryIds] = useState<string[]>([]);
+
+    // Attachment state
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
     // Initialize with prop if available, otherwise empty string
     const [selectedEventId, setSelectedEventId] = useState(eventId || '');
@@ -80,15 +85,32 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskCrea
         }
 
         try {
-            await tasksService.createTaskWithInventory({
+            // 1. Create Task
+            const newTask = await tasksService.createTaskWithInventory({
                 event_id: selectedEventId,
                 title,
                 description,
                 assignee_id: assigneeId || null,
                 priority,
-                status: 'Not Started',
+                status: 'Pending',
                 deadline: deadline ? new Date(deadline).toISOString() : null,
             }, selectedInventoryIds);
+
+            // 2. Upload Attachment if present
+            if (selectedFile && currentUser) {
+                try {
+                    await attachmentsService.uploadAttachment(
+                        selectedFile,
+                        newTask.id,
+                        currentUser.id,
+                        'creation'
+                    );
+                } catch (uploadErr) {
+                    console.error('Task created but attachment failed:', uploadErr);
+                    // We don't stop the flow, just log it, or maybe alert user?
+                    // For now, let's proceed as task creation is the primary goal.
+                }
+            }
 
             onTaskCreated();
             onClose();
@@ -99,6 +121,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskCrea
             setPriority('Medium');
             setDeadline('');
             setSelectedInventoryIds([]);
+            setSelectedFile(null);
             // Only reset event selection if it wasn't fixed by prop
             if (!eventId) setSelectedEventId('');
         } catch (err: any) {
@@ -172,6 +195,24 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskCrea
                                 />
                             </div>
 
+                            {/* Attachment Upload */}
+                            <div>
+                                <label htmlFor="task-attachment" className="block text-sm font-medium text-slate-700">Attachment (Optional)</label>
+                                <input
+                                    type="file"
+                                    id="task-attachment"
+                                    onChange={e => setSelectedFile(e.target.files?.[0] || null)}
+                                    className="mt-1 block w-full text-sm text-slate-500
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-full file:border-0
+                                        file:text-sm file:font-semibold
+                                        file:bg-blue-50 file:text-blue-700
+                                        hover:file:bg-blue-100"
+                                    accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,.xls,.xlsx"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Images or Office docs, max 10MB.</p>
+                            </div>
+
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label htmlFor="task-assignee" className="block text-sm font-medium text-slate-700">Assignee</label>
@@ -180,6 +221,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onClose, onTaskCrea
                                         className="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                                         value={assigneeId}
                                         onChange={e => setAssigneeId(e.target.value)}
+                                        disabled={!currentUser} // Can't assign if we don't know who is assigning (technically we can, but good for UX)
                                     >
                                         <option value="">Unassigned</option>
                                         {teamMembers.map(member => (

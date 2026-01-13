@@ -22,7 +22,7 @@ export interface Profile {
 }
 
 export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
-export type TaskStatus = 'Not Started' | 'In Progress' | 'Completed' | 'On Hold';
+export type TaskStatus = 'Pending' | 'Acknowledged' | 'In Review' | 'In Progress' | 'Awaiting Approval' | 'Completed' | 'On Hold';
 
 export interface Task {
     id: string;
@@ -46,4 +46,16 @@ export interface InventoryItem {
     min_stock_level: number;
     supplier_info: Record<string, unknown> | null;
     image_url: string | null;
+}
+
+export interface TaskAttachment {
+    id: string;
+    task_id: string;
+    file_name: string;
+    file_path: string;
+    file_type: string;
+    file_size: number;
+    uploaded_by: string;
+    context: 'creation' | 'submission' | 'comment';
+    created_at: string;
 }

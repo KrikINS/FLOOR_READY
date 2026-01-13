@@ -3,8 +3,11 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../services/supabase';
 import SplashScreen from '../components/ui/SplashScreen';
 
+import { useAuth } from '../context/AuthContext';
+
 const Login: React.FC = () => {
     const navigate = useNavigate();
+    const { user, loading: authLoading } = useAuth(); // Monitor global auth state
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [formData, setFormData] = useState({
@@ -20,6 +23,13 @@ const Login: React.FC = () => {
         }, 2500);
         return () => clearTimeout(timer);
     }, []);
+
+    // Auto-redirect if user is detected (handled by AuthContext)
+    React.useEffect(() => {
+        if (user && !authLoading) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [user, authLoading, navigate]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -37,11 +47,10 @@ const Login: React.FC = () => {
             });
 
             if (error) throw error;
-            navigate('/dashboard');
+            // Navigation is handled by the useEffect above when 'user' state changes
         } catch (err: unknown) {
             console.error('Login error:', err);
             setError((err as Error).message || 'Failed to login');
-        } finally {
             setLoading(false);
         }
     };

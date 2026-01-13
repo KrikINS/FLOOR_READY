@@ -7,14 +7,19 @@ interface TaskStatusBadgeProps {
 }
 
 const TaskStatusBadge: React.FC<TaskStatusBadgeProps> = ({ status }) => {
-    const variantMap: Record<TaskStatus, 'default' | 'success' | 'warning' | 'error'> = {
-        'Not Started': 'default',
-        'In Progress': 'warning',
+    const variantMap: Record<TaskStatus, 'default' | 'success' | 'warning' | 'error' | 'primary'> = {
+        'Pending': 'default',
+        'Acknowledged': 'primary',
+        'In Review': 'warning',
+        'In Progress': 'primary',
+        'Awaiting Approval': 'warning',
         'Completed': 'success',
         'On Hold': 'error',
     };
 
-    return <Badge variant={variantMap[status]}>{status}</Badge>;
+    const variant = variantMap[status] || 'default';
+
+    return <Badge variant={variant}>{status}</Badge>;
 };
 
 export default TaskStatusBadge;

@@ -13,6 +13,36 @@ export const teamService = {
         return data as Profile[];
     },
 
+    async getCurrentProfile() {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+            console.error('getCurrentProfile: No auth user found');
+            return null;
+        }
+
+        // Retry logic for profile fetch
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        while (attempts < maxAttempts) {
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+
+            if (!error && data) return data as Profile;
+
+            console.warn(`getCurrentProfile: Attempt ${attempts + 1} failed`, error);
+            attempts++;
+            // Wait 1s before retry
+            if (attempts < maxAttempts) await new Promise(r => setTimeout(r, 1000));
+        }
+
+        console.error('getCurrentProfile: All attempts failed for user', user.id);
+        return null;
+    },
+
     async updateMemberRole(userId: string, role: 'Admin' | 'Manager' | 'Staff') {
         const { error } = await supabase
             .from('profiles')

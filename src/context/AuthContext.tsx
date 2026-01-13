@@ -30,10 +30,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
 
-    // Helper to fetch profile with timeout
+    // Helper to fetch profile with timeout and fallbacks
     const fetchProfile = async (userId: string) => {
         try {
-            // 5 second timeout for profile fetch
+            // Attempt 1: Standard Client with Timeout
             const { data, error } = await Promise.race([
                 supabase
                     .from('profiles')
@@ -45,10 +45,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 )
             ]);
 
-            if (error) throw error;
-            return data as Profile;
+            if (!error && data) return data as Profile;
+            if (error) console.warn('Core: Client fetch failed, trying fallback...', error);
+
         } catch (err) {
-            console.error('Core: Profile fetch failed', err);
+            console.warn('Core: Client fetch timed out/failed, switching to REST fallback...', err);
+        }
+
+        // Attempt 2: Direct REST Fetch (Bypasses Client State)
+        try {
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+            const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+            // We need the current session token for RLS
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            if (!token || !supabaseUrl || !supabaseKey) throw new Error('Missing config for fallback');
+
+            const response = await fetch(`${supabaseUrl}/rest/v1/profiles?id=eq.${userId}&select=*`, {
+                headers: {
+                    'apikey': supabaseKey,
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) throw new Error(`REST Error: ${response.statusText}`);
+
+            const rows = await response.json();
+            if (rows && rows.length > 0) return rows[0] as Profile;
+
+            console.error('Core: No profile found via fallback');
+            return null;
+
+        } catch (fallbackErr) {
+            console.error('Core: All profile fetch attempts failed', fallbackErr);
             return null;
         }
     };
@@ -107,10 +139,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 });
 
                 // Only fetch profile if we don't have it or if it's a new user
-                if (!profile || profile.id !== newSession.user.id) {
-                    const userProfile = await fetchProfile(newSession.user.id);
-                    setProfile(userProfile);
-                }
+                // Fire and forget profile fetch to avoid blocking the auth listener
+                // We rely on state updates to trigger re-renders
+                fetchProfile(newSession.user.id).then(userProfile => {
+                    if (userProfile) setProfile(userProfile);
+                    setLoading(false);
+                });
+            } else {
                 setLoading(false);
             }
         });
