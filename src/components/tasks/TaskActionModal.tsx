@@ -16,7 +16,7 @@ interface TaskActionModalProps {
 const STEPS: TaskStatus[] = [
     'Pending',
     'Acknowledged',
-    'In Review',
+    // 'In Review', // Combined with Acknowledged
     'In Progress',
     'Awaiting Approval',
     'Completed'
@@ -40,7 +40,9 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
     const isAssignee = currentUser?.id === task.assignee_id;
     const isAdminOrManager = currentUser?.role === 'Admin' || currentUser?.role === 'Manager';
     const currentStepIndex = STEPS.indexOf(task.status);
-    const nextStep = STEPS[currentStepIndex + 1];
+    // Handle case where existing task might be 'In Review' (treat as Acknowledged index for visual progress)
+    const normalizedStepIndex = task.status === 'In Review' ? STEPS.indexOf('Acknowledged') : currentStepIndex;
+    const nextStep = STEPS[normalizedStepIndex + 1];
 
     // Lock and Check logic
     const isLockedForAssignee = isAssignee && task.status === 'Awaiting Approval';
@@ -81,9 +83,9 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
         setUploading(true);
         setError(null);
         try {
-            const context = task.status === 'In Progress' ? 'submission' : 'comment'; // submission if actively working
+            const context = task.status === 'In Progress' ? 'submission' : 'comment';
             await attachmentsService.uploadAttachment(file, task.id, currentUser.id, context);
-            await loadAttachments(); // Refresh list
+            await loadAttachments();
         } catch (err: any) {
             console.error('Upload failed:', err);
             setError(err.message || 'Upload failed');
@@ -102,7 +104,16 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
         setError(null);
 
         try {
-            await tasksService.updateTask(task.id, { status: statusToSet });
+            const updates: Partial<Task> = { status: statusToSet };
+            const now = new Date().toISOString();
+
+            if (statusToSet === 'Acknowledged') {
+                updates.acknowledged_at = now;
+            } else if (statusToSet === 'Completed') {
+                updates.completed_at = now;
+            }
+
+            await tasksService.updateTask(task.id, updates);
             onTaskUpdated();
             onClose();
         } catch (err: any) {
@@ -130,14 +141,16 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
     const getActionLabel = () => {
         if (!nextStep) return 'Completed';
         switch (nextStep) {
-            case 'Acknowledged': return 'Acknowledge Task';
-            case 'In Review': return 'Start Review';
+            case 'Acknowledged': return 'Acknowledge & Review'; // Combined label
             case 'In Progress': return 'Start Work';
             case 'Awaiting Approval': return 'Submit for Approval';
             case 'Completed': return 'Approve & Complete';
             default: return 'Next Stage';
         }
     };
+
+    // Upload Permission: ONLY Assignee can upload, and ONLY when 'In Progress' (preparing for completion)
+    const canUpload = isAssignee && task.status === 'In Progress';
 
     return (
         <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -175,7 +188,7 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                             <div className="w-full bg-gray-200 rounded-full h-2.5">
                                 <div
                                     className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
-                                    style={{ width: `${((currentStepIndex) / (STEPS.length - 1)) * 100}%` }}
+                                    style={{ width: `${((normalizedStepIndex) / (STEPS.length - 1)) * 100}%` }}
                                 ></div>
                             </div>
                             <p className="text-center text-sm font-semibold text-blue-600 mt-2">
@@ -207,8 +220,8 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                                 <p className="text-sm text-gray-400 italic mb-3">No attachments yet.</p>
                             )}
 
-                            {/* Upload Input - Visible if not locked or if Admin */}
-                            {(!isLockedForAssignee || isAdminOrManager) && (
+                            {/* Upload Input - Visibility Restricted */}
+                            {canUpload && (
                                 <div className="mt-2">
                                     <label className="block text-xs font-medium text-gray-700 mb-1">Upload New (Images/Office, Max 10MB)</label>
                                     <input
@@ -233,6 +246,41 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                             <p>{task.description || 'No description provided.'}</p>
                         </div>
 
+                        {/* Task Log Timeline */}
+                        <div className="bg-white border border-slate-200 p-4 rounded-lg mb-4 shadow-sm">
+                            <h4 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">Task Timeline</h4>
+                            <div className="space-y-3 text-sm">
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Created:</span>
+                                    <span className="font-medium text-gray-900">
+                                        {new Date(task.created_at).toLocaleString()}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="text-gray-500">Deadline:</span>
+                                    <span className={`font-medium ${task.deadline && new Date(task.deadline) < new Date() ? 'text-red-600' : 'text-gray-900'}`}>
+                                        {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'None'}
+                                    </span>
+                                </div>
+                                {task.acknowledged_at && (
+                                    <div className="flex justify-between">
+                                        <span className="text-blue-600">Acknowledged:</span>
+                                        <span className="font-medium text-gray-900">
+                                            {new Date(task.acknowledged_at).toLocaleString()}
+                                        </span>
+                                    </div>
+                                )}
+                                {task.completed_at && (
+                                    <div className="flex justify-between">
+                                        <span className="text-green-600">Completed:</span>
+                                        <span className="font-medium text-gray-900">
+                                            {new Date(task.completed_at).toLocaleString()}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         {error && (
                             <div className="mb-4 text-sm text-red-600 bg-red-50 p-2 rounded">
                                 {error}
@@ -247,78 +295,83 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                         )}
                     </div>
 
-                    <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                        {/* Approval Buttons for Admin/Manager */}
-                        {canApprove && (
-                            <>
-                                <Button
-                                    onClick={() => handleAction('Completed')}
-                                    disabled={loading}
-                                    className="w-full sm:ml-3 sm:w-auto bg-green-600 hover:bg-green-700"
-                                >
-                                    Approve & Complete
-                                </Button>
-                                <Button
-                                    onClick={() => handleAction('In Progress')} // Reject -> Send back
-                                    disabled={loading}
-                                    variant="secondary"
-                                    className="w-full sm:ml-3 sm:w-auto mt-3 sm:mt-0"
-                                >
-                                    Reject (Send Back)
-                                </Button>
-                            </>
-                        )}
-
-                        {/* Standard Progress Button */}
-                        {canMoveForward && (
+                    <div className="bg-gray-50 px-4 py-3 sm:px-6 flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3">
+                        {/* LEFT: Secondary Actions (Close, Reassign) */}
+                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
                             <Button
-                                onClick={() => handleAction()}
-                                disabled={loading}
-                                className="w-full sm:ml-3 sm:w-auto"
+                                variant="secondary"
+                                onClick={onClose}
+                                className="w-full sm:w-auto"
                             >
-                                {loading ? 'Updating...' : getActionLabel()}
+                                Close
                             </Button>
-                        )}
 
-                        {/* Reassignment UI for Admin/Manager */}
-                        {isAdminOrManager && (
-                            <div className="mt-4 border-t pt-4">
-                                {isReassigning ? (
-                                    <div className="flex items-center space-x-2">
-                                        <select
-                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                            onChange={(e) => handleReassign(e.target.value)}
-                                            defaultValue=""
+                            {/* Reassignment UI */}
+                            {isAdminOrManager && (
+                                <div className="w-full sm:w-auto">
+                                    {isReassigning ? (
+                                        <div className="flex items-center gap-2">
+                                            <select
+                                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-1.5"
+                                                onChange={(e) => handleReassign(e.target.value)}
+                                                defaultValue=""
+                                            >
+                                                <option value="" disabled>Reassign to...</option>
+                                                {teamMembers.map(member => (
+                                                    <option key={member.id} value={member.id}>
+                                                        {member.full_name || 'Unknown Helper'}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <Button variant="ghost" size="sm" onClick={() => setIsReassigning(false)}>✕</Button>
+                                        </div>
+                                    ) : (
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => setIsReassigning(true)}
+                                            className="w-full sm:w-auto text-slate-500 hover:text-blue-600"
                                         >
-                                            <option value="" disabled>Select new assignee...</option>
-                                            {teamMembers.map(member => (
-                                                <option key={member.id} value={member.id}>
-                                                    {member.full_name || 'Unknown Helper'}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <Button variant="ghost" size="sm" onClick={() => setIsReassigning(false)}>
-                                            Cancel
+                                            Reassign
                                         </Button>
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => setIsReassigning(true)}
-                                        className="text-sm text-blue-600 hover:text-blue-800 underline"
-                                    >
-                                        Reassign Task
-                                    </button>
-                                )}
-                            </div>
-                        )}
+                                    )}
+                                </div>
+                            )}
+                        </div>
 
-                        <button
-                            type="button"
-                            className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                            onClick={onClose}
-                        >
-                            Close
-                        </button>
+                        {/* RIGHT: Primary Actions (Approve, Reject, Next) */}
+                        <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto sm:justify-end">
+                            {/* Approval Flow */}
+                            {canApprove && (
+                                <>
+                                    <Button
+                                        onClick={() => handleAction('In Progress')} // Reject -> Send back
+                                        disabled={loading}
+                                        variant="danger"
+                                        className="w-full sm:w-auto bg-red-50 text-red-600 hover:bg-red-100 border-red-200"
+                                    >
+                                        Reject
+                                    </Button>
+                                    <Button
+                                        onClick={() => handleAction('Completed')}
+                                        disabled={loading}
+                                        className="w-full sm:w-auto bg-green-600 hover:bg-green-700 border-transparent text-white"
+                                    >
+                                        Approve & Complete
+                                    </Button>
+                                </>
+                            )}
+
+                            {/* Standard Workflow */}
+                            {canMoveForward && (
+                                <Button
+                                    onClick={() => handleAction()}
+                                    disabled={loading}
+                                    className="w-full sm:w-auto shadow-md"
+                                >
+                                    {loading ? 'Updating...' : getActionLabel()}
+                                </Button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

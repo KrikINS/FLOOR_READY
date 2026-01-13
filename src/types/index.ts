@@ -34,6 +34,8 @@ export interface Task {
     status: TaskStatus;
     deadline: string | null;
     created_at: string;
+    acknowledged_at?: string | null;
+    completed_at?: string | null;
     profiles?: Profile | null; // For joined assignee query
     events?: Event | null; // For joined event query
 }
