@@ -159,12 +159,36 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                 updates.completed_at = now;
             }
 
+            // Merge fulfillment data into updates
+            Object.assign(updates, {
+                actual_cost: fulfillmentData.actual_cost ? Number(fulfillmentData.actual_cost) : null,
+                vendor_name: fulfillmentData.vendor_name,
+                vendor_address: fulfillmentData.vendor_address,
+                vendor_contact: fulfillmentData.vendor_contact,
+            });
+
             await tasksService.updateTask(task.id, updates);
             onTaskUpdated();
             onClose();
         } catch (err: unknown) {
             console.error('Failed to update task:', err);
             setError(err instanceof Error ? err.message : 'Failed to update task status');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm('Are you sure you want to delete this task? This action cannot be undone.')) return;
+
+        setLoading(true);
+        try {
+            await tasksService.deleteTask(task.id);
+            onTaskUpdated();
+            onClose();
+        } catch (err: unknown) {
+            console.error('Failed to delete task:', err);
+            setError(err instanceof Error ? err.message : 'Failed to delete task');
         } finally {
             setLoading(false);
         }
@@ -289,77 +313,79 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                             )}
                         </div>
 
-                        {/* Fulfillment Details Section */}
-                        <div className="mt-6 pt-6 border-t border-slate-200">
-                            <h4 className="text-sm font-bold text-gray-900 mb-4">Fulfillment Details</h4>
-                            <div className="grid grid-cols-1 gap-4">
-                                {/* Cost */}
-                                <div>
-                                    <label className="block text-xs font-medium text-slate-500 uppercase">Actual Cost (AED)</label>
-                                    <input
-                                        type="number"
-                                        disabled={!canEditFulfillment}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-500"
-                                        placeholder="0.00"
-                                        value={fulfillmentData.actual_cost}
-                                        onChange={(e) => setFulfillmentData({ ...fulfillmentData, actual_cost: e.target.value })}
-                                    />
-                                </div>
-
-                                {/* Vendor Name */}
-                                <div>
-                                    <label className="block text-xs font-medium text-slate-500 uppercase">Vendor / Service Provider Name</label>
-                                    <input
-                                        type="text"
-                                        disabled={!canEditFulfillment}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-500"
-                                        placeholder="Company Name"
-                                        value={fulfillmentData.vendor_name}
-                                        onChange={(e) => setFulfillmentData({ ...fulfillmentData, vendor_name: e.target.value })}
-                                    />
-                                </div>
-
-                                {/* Vendor Details Grid */}
-                                <div className="grid grid-cols-2 gap-4">
+                        {/* Fulfillment Details Section - Hidden in early stages */}
+                        {!['Pending', 'Acknowledged'].includes(task.status) && (
+                            <div className="mt-6 pt-6 border-t border-slate-200">
+                                <h4 className="text-sm font-bold text-gray-900 mb-4">Fulfillment Details</h4>
+                                <div className="grid grid-cols-1 gap-4">
+                                    {/* Cost */}
                                     <div>
-                                        <label className="block text-xs font-medium text-slate-500 uppercase">Vendor Contact</label>
+                                        <label className="block text-xs font-medium text-slate-500 uppercase">Actual Cost (SAR)</label>
+                                        <input
+                                            type="number"
+                                            disabled={!canEditFulfillment}
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-500"
+                                            placeholder="0.00"
+                                            value={fulfillmentData.actual_cost}
+                                            onChange={(e) => setFulfillmentData({ ...fulfillmentData, actual_cost: e.target.value })}
+                                        />
+                                    </div>
+
+                                    {/* Vendor Name */}
+                                    <div>
+                                        <label className="block text-xs font-medium text-slate-500 uppercase">Vendor / Service Provider Name</label>
                                         <input
                                             type="text"
                                             disabled={!canEditFulfillment}
                                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-500"
-                                            placeholder="+971..."
-                                            value={fulfillmentData.vendor_contact}
-                                            onChange={(e) => setFulfillmentData({ ...fulfillmentData, vendor_contact: e.target.value })}
+                                            placeholder="Company Name"
+                                            value={fulfillmentData.vendor_name}
+                                            onChange={(e) => setFulfillmentData({ ...fulfillmentData, vendor_name: e.target.value })}
                                         />
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-500 uppercase">Address / Location</label>
-                                        <input
-                                            type="text"
-                                            disabled={!canEditFulfillment}
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-500"
-                                            placeholder="Location"
-                                            value={fulfillmentData.vendor_address}
-                                            onChange={(e) => setFulfillmentData({ ...fulfillmentData, vendor_address: e.target.value })}
-                                        />
-                                    </div>
-                                </div>
 
-                                {/* Save Button for Fulfillment */}
-                                {canEditFulfillment && (
-                                    <div className="flex justify-end mt-2">
-                                        <Button
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={handleSaveFulfillment}
-                                            isLoading={loading}
-                                        >
-                                            Save Details
-                                        </Button>
+                                    {/* Vendor Details Grid */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-500 uppercase">Vendor Contact</label>
+                                            <input
+                                                type="text"
+                                                disabled={!canEditFulfillment}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-500"
+                                                placeholder="+971..."
+                                                value={fulfillmentData.vendor_contact}
+                                                onChange={(e) => setFulfillmentData({ ...fulfillmentData, vendor_contact: e.target.value })}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-500 uppercase">Address / Location</label>
+                                            <input
+                                                type="text"
+                                                disabled={!canEditFulfillment}
+                                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm disabled:bg-slate-50 disabled:text-slate-500"
+                                                placeholder="Location"
+                                                value={fulfillmentData.vendor_address}
+                                                onChange={(e) => setFulfillmentData({ ...fulfillmentData, vendor_address: e.target.value })}
+                                            />
+                                        </div>
                                     </div>
-                                )}
+
+                                    {/* Save Button for Fulfillment */}
+                                    {canEditFulfillment && (
+                                        <div className="flex justify-end mt-2">
+                                            <Button
+                                                variant="secondary"
+                                                size="sm"
+                                                onClick={handleSaveFulfillment}
+                                                isLoading={loading}
+                                            >
+                                                Save Details
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="bg-slate-50 p-3 rounded-md mb-4 text-sm text-slate-600">
                             <p><strong>Description:</strong></p>
@@ -463,6 +489,16 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                                             Reassign
                                         </Button>
                                     )}
+
+                                    {/* Delete Button */}
+                                    <Button
+                                        variant="ghost"
+                                        onClick={handleDelete}
+                                        className="w-full sm:w-auto text-red-500 hover:text-red-700 hover:bg-red-50"
+                                        title="Delete Task"
+                                    >
+                                        Delete
+                                    </Button>
                                 </div>
                             )}
                         </div>

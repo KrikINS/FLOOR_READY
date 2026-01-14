@@ -26,6 +26,7 @@ import InventoryList from './pages/inventory/InventoryList';
 import NewItem from './pages/inventory/NewItem';
 import TeamList from './pages/team/TeamList';
 import DebugConnection from './pages/DebugConnection';
+import ChequesAndBalances from './pages/ChequesAndBalances';
 
 // Placeholders for other pages
 const Placeholder = ({ title }: { title: string }) => (
@@ -68,6 +69,7 @@ function AppContent() {
           <Route path="/inventory/new" element={<NewItem />} />
 
           <Route path="/team" element={<TeamList />} />
+          <Route path="/cheques-balances" element={<ChequesAndBalances />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:id" element={<Profile />} />
           <Route path="*" element={<Placeholder title="404 Not Found" />} />

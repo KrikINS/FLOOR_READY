@@ -48,6 +48,12 @@ export interface Task {
     vendor_name?: string | null;
     vendor_address?: string | null;
     vendor_contact?: string | null;
+
+    // Profitability Fields
+    cost_to_client?: number | null;
+    unit_type?: string | null; // e.g., 'Piece', 'Hour', 'Day'
+    billable_quantity?: number | null;
+    profitability_comments?: string | null;
 }
 
 export interface InventoryItem {
@@ -69,5 +75,22 @@ export interface TaskAttachment {
     file_size: number;
     uploaded_by: string;
     context: 'creation' | 'submission' | 'comment';
+    created_at: string;
+}
+
+export type ExpenseType = 'Cash' | 'Cheque' | 'Transfer' | 'Card' | 'Other';
+export type ExpenseStatus = 'Pending' | 'Cleared' | 'Bounce' | 'Cancelled';
+
+export interface Expense {
+    id: string;
+    title: string;
+    amount: number;
+    type: ExpenseType;
+    cheque_number?: string | null;
+    cheque_date?: string | null;
+    status: ExpenseStatus;
+    task_id?: string | null;
+    vendor?: string | null;
+    created_by: string;
     created_at: string;
 }
