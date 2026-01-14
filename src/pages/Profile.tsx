@@ -163,9 +163,10 @@ const Profile: React.FC = () => {
 
             setMessage({ type: 'success', text: 'Profile updated successfully.' });
             setIsEditing(false);
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('Error updating profile:', err);
-            setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
+            const errorMessage = (err as { message?: string })?.message || 'Failed to update profile.';
+            setMessage({ type: 'error', text: errorMessage });
         } finally {
             setIsSaving(false);
         }
@@ -220,9 +221,10 @@ const Profile: React.FC = () => {
 
             setMessage({ type: 'success', text: 'Avatar updated successfully.' });
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error uploading avatar:', error);
-            setMessage({ type: 'error', text: error.message || 'Error uploading avatar.' });
+            const errorMessage = (error as { message?: string })?.message || 'Error uploading avatar.';
+            setMessage({ type: 'error', text: errorMessage });
         } finally {
             setIsSaving(false);
         }
@@ -327,6 +329,7 @@ const Profile: React.FC = () => {
                                         <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                                     </span>
                                     <input
+                                        title="Email Address"
                                         type="text"
                                         disabled
                                         className="flex-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full min-w-0 rounded-none rounded-r-md sm:text-sm border-slate-300 bg-slate-50 text-slate-500 cursor-not-allowed"
@@ -341,9 +344,12 @@ const Profile: React.FC = () => {
 
                             {/* Full Name */}
                             <div className="sm:col-span-3">
-                                <label className="block text-sm font-medium text-slate-700">Full Name</label>
+                                <label htmlFor="full-name" className="block text-sm font-medium text-slate-700">Full Name</label>
                                 <div className="mt-1">
                                     <input
+                                        id="full-name"
+                                        title="Full Name"
+                                        placeholder="Full Name"
                                         type="text"
                                         disabled={!isEditing}
                                         className={`block w-full sm:text-sm rounded-md transition-all duration-200

@@ -56,6 +56,26 @@ export interface Task {
     profitability_comments?: string | null;
 }
 
+export interface ExpenseRequest {
+    id: string;
+    created_at: string;
+    updated_at: string;
+    requester_id: string;
+    request_date: string;
+    type: 'Task' | 'Miscellaneous';
+    task_id?: string | null;
+    description: string;
+    amount: number;
+    status: 'Pending' | 'Approved' | 'Rejected' | 'Paid_Confirmed' | 'Changes_Requested';
+    attachment_url?: string | null;
+    requester_comments?: string | null;
+    rejection_reason?: string | null;
+
+    // Joined fields
+    tasks?: { title: string } | null;
+    profiles?: { full_name: string; avatar_url: string | null } | null;
+}
+
 export interface InventoryItem {
     id: string;
     item_name: string;

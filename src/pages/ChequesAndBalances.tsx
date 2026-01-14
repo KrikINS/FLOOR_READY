@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { financeService } from '../services/finance';
 import { tasksService } from '../services/tasks';
 import { useAuth } from '../context/AuthContext';
@@ -29,11 +29,7 @@ const ChequesAndBalances: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedExpense, setSelectedExpense] = useState<Expense | undefined>(undefined);
 
-    useEffect(() => {
-        loadData();
-    }, [activeTab]); // Reload when tab switches to ensure fresh data
-
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         try {
             setLoading(true);
 
@@ -51,7 +47,11 @@ const ChequesAndBalances: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [activeTab, isAdminOrManager]);
+
+    useEffect(() => {
+        loadData();
+    }, [loadData]); // Reload when tab switches to ensure fresh data
 
     const calculateStats = (data: Expense[]) => {
         const pending = data.filter(e => e.status === 'Pending');
@@ -352,7 +352,7 @@ const ChequesAndBalances: React.FC = () => {
                                                                     <td className="px-3 py-4 whitespace-nowrap text-gray-500">
                                                                         <div className="flex items-center">
                                                                             {task.profiles?.avatar_url ? (
-                                                                                <img src={task.profiles.avatar_url} className="h-6 w-6 rounded-full mr-2" />
+                                                                                <img src={task.profiles.avatar_url} alt={task.profiles?.full_name || 'Avatar'} className="h-6 w-6 rounded-full mr-2" />
                                                                             ) : (
                                                                                 <div className="h-6 w-6 rounded-full bg-slate-200 flex items-center justify-center text-xs mr-2">{task.profiles?.full_name?.charAt(0)}</div>
                                                                             )}
@@ -365,8 +365,10 @@ const ChequesAndBalances: React.FC = () => {
                                                                         <input
                                                                             type="number"
                                                                             value={costToClient}
-                                                                            onChange={(e) => handleCellChange(task.id, 'cost_to_client', e.target.value)}
+                                                                            onChange={(e) => handleCellChange(task.id, 'cost_to_client', parseFloat(e.target.value) || 0)}
                                                                             className="w-24 border-gray-300 rounded-md text-sm p-1 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                                                            title="Cost to client"
+                                                                            aria-label="Cost to client"
                                                                         />
                                                                     </td>
 
@@ -385,6 +387,8 @@ const ChequesAndBalances: React.FC = () => {
                                                                             value={unitType}
                                                                             onChange={(e) => handleCellChange(task.id, 'unit_type', e.target.value)}
                                                                             className="w-20 border-gray-300 rounded-md text-sm p-1 shadow-sm"
+                                                                            title="Unit type"
+                                                                            aria-label="Unit type"
                                                                         />
                                                                     </td>
 
@@ -393,8 +397,10 @@ const ChequesAndBalances: React.FC = () => {
                                                                         <input
                                                                             type="number"
                                                                             value={quantity}
-                                                                            onChange={(e) => handleCellChange(task.id, 'billable_quantity', e.target.value)}
+                                                                            onChange={(e) => handleCellChange(task.id, 'billable_quantity', parseFloat(e.target.value) || 0)}
                                                                             className="w-16 border-gray-300 rounded-md text-sm p-1 shadow-sm"
+                                                                            title="Quantity"
+                                                                            aria-label="Quantity"
                                                                         />
                                                                     </td>
 
@@ -410,6 +416,8 @@ const ChequesAndBalances: React.FC = () => {
                                                                             onChange={(e) => handleCellChange(task.id, 'profitability_comments', e.target.value)}
                                                                             className="w-full border-gray-300 rounded-md text-sm p-1 shadow-sm"
                                                                             placeholder="Notes..."
+                                                                            title="Comments"
+                                                                            aria-label="Comments"
                                                                         />
                                                                     </td>
 

@@ -12,10 +12,10 @@ const NavLink: React.FC<{ to: string; children: React.ReactNode }> = ({ to, chil
     return (
         <Link
             to={to}
-            className={`inline - flex items - center px - 1 pt - 1 border - b - 2 text - sm font - medium ${isActive
-                ? 'border-primary text-slate-900'
-                : 'border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-700'
-                } `}
+            className={`inline-flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${isActive
+                ? 'bg-slate-200 text-slate-900'
+                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700'
+                } focus:outline-none`}
         >
             {children}
         </Link>
@@ -26,6 +26,7 @@ const Layout: React.FC = () => {
     const navigate = useNavigate();
     const { signOut, user } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = React.useState(false);
 
     const handleSignOut = async () => {
         await signOut();
@@ -40,38 +41,94 @@ const Layout: React.FC = () => {
                     <div className="flex justify-between h-16">
                         <div className="flex">
                             <div className="flex-shrink-0 flex items-center">
-                                <Link to="/dashboard" className="text-xl font-bold text-primary">
-                                    Floor Ready
+                                <Link to="/dashboard">
+                                    <img src="/floor_ready_logo.png" alt="Floor Ready" className="h-10 w-auto" />
                                 </Link>
                             </div>
-                            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+                            {/* Changed breakpoint to md to fit all items */}
+                            <div className="hidden md:ml-6 md:flex md:space-x-2 lg:space-x-4">
                                 <NavLink to="/dashboard">Dashboard</NavLink>
                                 <NavLink to="/events">Events</NavLink>
                                 <NavLink to="/tasks">Tasks</NavLink>
                                 <NavLink to="/inventory">Inventory</NavLink>
                                 <NavLink to="/team">Team</NavLink>
+                                <NavLink to="/expense-requests">Expense Requests</NavLink>
                                 <NavLink to="/cheques-balances">Cheques & Balances</NavLink>
                             </div>
                         </div>
                         <div className="flex items-center space-x-4">
-                            <div className="flex flex-col items-end hidden sm:flex">
-                                <Link to="/profile" className="text-sm font-medium text-slate-900 hover:text-primary">
-                                    {user?.user_metadata?.full_name || 'Profile'}
-                                </Link>
-                                {user?.user_metadata?.role === 'Admin' && (
-                                    <span className="text-xs bg-red-100 text-red-800 px-2 py-0.5 rounded-full font-bold">
-                                        Admin
-                                    </span>
-                                )}
-                            </div>
-                            <div className="hidden sm:block">
-                                <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                                    Sign Out
-                                </Button>
+                            <div className="hidden md:flex items-center relative ml-3">
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                                        className="flex items-center max-w-xs text-sm font-medium text-slate-900 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary hover:text-primary"
+                                        id="user-menu-button"
+                                        aria-expanded={isUserMenuOpen}
+                                        aria-haspopup="true"
+                                    >
+                                        <span className="sr-only">Open user menu</span>
+                                        <div className="flex flex-col items-end mr-2">
+                                            <span className="font-medium">{user?.user_metadata?.full_name || 'User'}</span>
+                                        </div>
+                                        <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 overflow-hidden">
+                                            {user?.user_metadata?.avatar_url ? (
+                                                <img src={user.user_metadata.avatar_url} alt="" className="h-8 w-8 object-cover" />
+                                            ) : (
+                                                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </button>
+
+                                    {/* Dropdown menu */}
+                                    {isUserMenuOpen && (
+                                        <div
+                                            className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-50"
+                                            role="menu"
+                                            aria-orientation="vertical"
+                                            aria-labelledby="user-menu-button"
+                                        >
+                                            <div className="px-4 py-2 border-b border-gray-100">
+                                                <p className="text-sm font-medium text-gray-900 truncate">
+                                                    {user?.user_metadata?.full_name || 'User'}
+                                                </p>
+                                                <p className="text-xs text-gray-500 truncate">
+                                                    {user?.email}
+                                                </p>
+                                                {user?.user_metadata?.role === 'Admin' && (
+                                                    <span className="mt-1 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                                        Admin
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <Link
+                                                to="/profile"
+                                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                role="menuitem"
+                                                onClick={() => setIsUserMenuOpen(false)}
+                                            >
+                                                Your Profile
+                                            </Link>
+
+                                            <button
+                                                onClick={() => {
+                                                    setIsUserMenuOpen(false);
+                                                    handleSignOut();
+                                                }}
+                                                className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                role="menuitem"
+                                            >
+                                                Sign out
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Mobile menu button */}
-                            <div className="flex items-center sm:hidden">
+                            {/* Mobile menu button - visible below md */}
+                            <div className="flex items-center md:hidden">
                                 <button
                                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                                     className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
@@ -99,13 +156,14 @@ const Layout: React.FC = () => {
 
                 {/* Mobile menu, show/hide based on menu state. */}
                 {isMobileMenuOpen && (
-                    <div className="sm:hidden bg-white border-t border-gray-200 shadow-lg absolute w-full left-0 z-50">
+                    <div className="md:hidden bg-white border-t border-gray-200 shadow-lg absolute w-full left-0 z-50">
                         <div className="pt-2 pb-3 space-y-1 px-4">
                             <Link to="/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Dashboard</Link>
                             <Link to="/events" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Events</Link>
                             <Link to="/tasks" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Tasks</Link>
                             <Link to="/inventory" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Inventory</Link>
                             <Link to="/team" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Team</Link>
+                            <Link to="/expense-requests" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Expense Requests</Link>
                             <Link to="/cheques-balances" onClick={() => setIsMobileMenuOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50">Cheques & Balances</Link>
                         </div>
                         <div className="pt-4 pb-4 border-t border-gray-200 px-4">
