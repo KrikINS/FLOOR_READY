@@ -83,7 +83,7 @@ const Dashboard: React.FC = () => {
                     <p className="text-sm text-slate-500 mt-1">Here's what's happening today.</p>
                 </div>
                 <div className="text-sm text-slate-400">
-                    {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    {new Date().toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}
                 </div>
             </div>
 
