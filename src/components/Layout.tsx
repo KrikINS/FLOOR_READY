@@ -2,7 +2,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import Button from './ui/Button';
 import KrikInsLogo from './ui/KrikInsLogo';
 
 // Custom NavLink wrapper
