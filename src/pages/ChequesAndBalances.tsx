@@ -88,7 +88,7 @@ const ChequesAndBalances: React.FC = () => {
         return `${initials}${suffix}`;
     };
 
-    const handleCellChange = (taskId: string, field: keyof Task, value: any) => {
+    const handleCellChange = (taskId: string, field: keyof Task, value: string | number) => {
         setEditingRows(prev => ({
             ...prev,
             [taskId]: {
@@ -289,11 +289,11 @@ const ChequesAndBalances: React.FC = () => {
                                     <ExpenseModal
                                         isOpen={isModalOpen}
                                         onClose={() => setIsModalOpen(false)}
-                                        onSave={() => {
+                                        onSuccess={() => {
                                             setIsModalOpen(false);
                                             loadData();
                                         }}
-                                        expense={selectedExpense}
+                                        expenseToEdit={selectedExpense}
                                     />
                                 </>
                             )}
@@ -331,8 +331,8 @@ const ChequesAndBalances: React.FC = () => {
                                                             const costToClient = editData.cost_to_client !== undefined ? Number(editData.cost_to_client) : (task.cost_to_client || 0);
                                                             const actualCost = task.actual_cost || 0; // Coming from task fulfillment
                                                             const quantity = editData.billable_quantity !== undefined ? Number(editData.billable_quantity) : (task.billable_quantity || 1);
-                                                            const unitType = editData.unit_type !== undefined ? editData.unit_type : (task.unit_type || 'Piece');
-                                                            const comments = editData.profitability_comments !== undefined ? editData.profitability_comments : (task.profitability_comments || '');
+                                                            const unitType = (editData.unit_type !== undefined ? editData.unit_type : task.unit_type) || 'Piece';
+                                                            const comments = (editData.profitability_comments !== undefined ? editData.profitability_comments : task.profitability_comments) || '';
 
                                                             // Calculations
                                                             const profitPerUnit = costToClient - actualCost;
