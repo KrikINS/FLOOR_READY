@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../ui/Button';
-import { type Expense, type ExpenseType, type ExpenseStatus } from '../../types';
+import { type Expense, type ExpenseType, type ExpenseStatus, type CostCenter } from '../../types';
 import { financeService } from '../../services/finance';
+import { costCenterService } from '../../services/costCenters';
 
 interface ExpenseModalProps {
     isOpen: boolean;
@@ -22,6 +23,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
         cheque_number: string;
         cheque_date: string;
         status: ExpenseStatus;
+        parent_cost_center_id: string;
+        child_cost_center_id: string;
     }>({
         title: '',
         amount: '',
@@ -29,8 +32,18 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
         vendor: '',
         cheque_number: '',
         cheque_date: '',
-        status: 'Pending'
+        status: 'Pending',
+        parent_cost_center_id: '',
+        child_cost_center_id: ''
     });
+
+    const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+    const parentCostCenters = costCenters.filter(c => c.type === 'Parent');
+    const childCostCenters = costCenters.filter(c => c.type === 'Child');
+
+    useEffect(() => {
+        costCenterService.getCostCenters().then(data => setCostCenters(data)).catch(console.error);
+    }, []);
 
     useEffect(() => {
         if (isOpen) {
@@ -42,7 +55,9 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
                     vendor: expenseToEdit.vendor || '',
                     cheque_number: expenseToEdit.cheque_number || '',
                     cheque_date: expenseToEdit.cheque_date ? new Date(expenseToEdit.cheque_date).toISOString().split('T')[0] : '',
-                    status: expenseToEdit.status
+                    status: expenseToEdit.status,
+                    parent_cost_center_id: expenseToEdit.parent_cost_center_id || '',
+                    child_cost_center_id: expenseToEdit.child_cost_center_id || ''
                 });
             } else {
                 setFormData({
@@ -52,7 +67,9 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
                     vendor: '',
                     cheque_number: '',
                     cheque_date: '',
-                    status: 'Pending'
+                    status: 'Pending',
+                    parent_cost_center_id: '',
+                    child_cost_center_id: ''
                 });
             }
             setError(null);
@@ -72,8 +89,11 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
                 vendor: formData.vendor || null,
                 status: formData.status,
                 // Only include cheque details if type is Cheque
+                // Only include cheque details if type is Cheque
                 cheque_number: formData.type === 'Cheque' ? formData.cheque_number : null,
                 cheque_date: formData.type === 'Cheque' && formData.cheque_date ? formData.cheque_date : null,
+                parent_cost_center_id: formData.parent_cost_center_id || null,
+                child_cost_center_id: formData.child_cost_center_id || null
             };
 
             if (expenseToEdit) {
@@ -169,6 +189,37 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onSuccess,
                                 value={formData.vendor}
                                 onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
                             />
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Parent Cost Center</label>
+                                <select
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    value={formData.parent_cost_center_id}
+                                    title="Parent Cost Center"
+                                    onChange={(e) => setFormData({ ...formData, parent_cost_center_id: e.target.value })}
+                                >
+                                    <option value="">Select Parent...</option>
+                                    {parentCostCenters.map(cc => (
+                                        <option key={cc.id} value={cc.id}>{cc.code} - {cc.title}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Child Cost Center</label>
+                                <select
+                                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    value={formData.child_cost_center_id}
+                                    title="Child Cost Center"
+                                    onChange={(e) => setFormData({ ...formData, child_cost_center_id: e.target.value })}
+                                >
+                                    <option value="">Select Child...</option>
+                                    {childCostCenters.map(cc => (
+                                        <option key={cc.id} value={cc.id}>{cc.code} - {cc.title}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
                         {formData.type === 'Cheque' && (

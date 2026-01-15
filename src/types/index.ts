@@ -113,4 +113,54 @@ export interface Expense {
     vendor?: string | null;
     created_by: string;
     created_at: string;
+    // New Cost Center Fields
+    parent_cost_center_id?: string | null;
+    child_cost_center_id?: string | null;
+}
+
+export interface CostCenter {
+    id: string;
+    created_at: string;
+    type: 'Parent' | 'Child';
+    code: string;
+    title: string;
+    description: string | null;
+}
+
+export interface ExpenseRequest {
+    id: string;
+    created_at: string;
+    updated_at: string;
+    requester_id: string;
+    request_date: string;
+    type: 'Task' | 'Miscellaneous';
+    task_id?: string | null;
+    description: string;
+    amount: number;
+    status: 'Pending' | 'Approved' | 'Rejected' | 'Paid_Confirmed' | 'Changes_Requested';
+    attachment_url?: string | null;
+    requester_comments?: string | null;
+    rejection_reason?: string | null;
+
+    // Cost Center
+    parent_cost_center_id?: string | null;
+    child_cost_center_id?: string | null;
+
+    // Joined fields
+    tasks?: { title: string } | null;
+    profiles?: { full_name: string; avatar_url: string | null } | null;
+    parent_cost_center?: CostCenter | null;
+    child_cost_center?: CostCenter | null;
+}
+
+export interface Event {
+    id: string;
+    name: string;
+    description: string | null;
+    location: string | null;
+    start_date: string | null; // ISO string
+    end_date: string | null;   // ISO string
+    status: EventStatus;
+    created_at: string;
+    cost_center_code?: string | null;
 }

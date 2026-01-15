@@ -8,7 +8,7 @@ export const tasksService = {
             .select(`
         *,
         profiles:assignee_id (full_name, avatar_url),
-        events:event_id (name)
+        events:event_id (name, cost_center_code)
       `)
             .order('created_at', { ascending: false });
 
@@ -36,7 +36,7 @@ export const tasksService = {
             .select(`
         *,
         profiles:assignee_id (full_name, avatar_url),
-        events:event_id (name)
+        events:event_id (name, cost_center_code)
       `)
             .eq('id', id)
             .single();

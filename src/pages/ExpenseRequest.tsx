@@ -2,17 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { expenseRequestService } from '../services/expenseRequests';
 import { tasksService } from '../services/tasks';
-import type { ExpenseRequest, Task } from '../types';
+import { costCenterService } from '../services/costCenters';
+import type { ExpenseRequest, Task, CostCenter, Profile } from '../types';
 import Button from '../components/ui/Button';
 
 // Simple Form Component
 const ExpenseRequestForm: React.FC<{
     onClose: () => void;
     onSuccess: () => void;
-    currentUser: any;
+    currentUser: Profile | null
 }> = ({ onClose, onSuccess, currentUser }) => {
     const [loading, setLoading] = useState(false);
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
     const [formData, setFormData] = useState({
         request_date: new Date().toISOString().split('T')[0],
         type: 'Task' as 'Task' | 'Miscellaneous',
@@ -20,29 +22,47 @@ const ExpenseRequestForm: React.FC<{
         amount: '',
         description: '',
         requester_comments: '',
-        attachment_url: '' // Placeholder mostly
+        attachment_url: '', // Placeholder mostly
+        parent_cost_center_id: '',
+        child_cost_center_id: ''
     });
 
+    const parentCostCenters = costCenters.filter(c => c.type === 'Parent');
+    const childCostCenters = costCenters.filter(c => c.type === 'Child');
+
     useEffect(() => {
-        // Fetch tasks assigned to user for selection
-        const loadTasks = async () => {
-            if (formData.type === 'Task') {
-                try {
-                    const data = await tasksService.getTasks();
-                    // Filter tasks relevant to user? Or all active tasks?
-                    // Typically users only expense against their tasks, but let's show all active for now or filtered.
-                    // For simplicity, showing all.
-                    setTasks(data.filter(t => t.status !== 'Completed'));
-                } catch (err) {
-                    console.error("Failed to load tasks", err);
-                }
+        // Fetch tasks and cost centers
+        const loadData = async () => {
+            try {
+                const [tasksData, costCentersData] = await Promise.all([
+                    tasksService.getTasks(),
+                    costCenterService.getCostCenters()
+                ]);
+                setTasks(tasksData.filter(t => t.status !== 'Completed'));
+                setCostCenters(costCentersData);
+            } catch (err) {
+                console.error("Failed to load data", err);
             }
         };
-        loadTasks();
-    }, [formData.type]);
+        loadData();
+    }, []);
+
+    // Auto-select Parent Cost Center when Task is Selected
+    useEffect(() => {
+        if (formData.task_id) {
+            const task = tasks.find(t => t.id === formData.task_id);
+            if (task && task.events?.cost_center_code) {
+                const parentCC = costCenters.find(c => c.code === task.events?.cost_center_code && c.type === 'Parent');
+                if (parentCC) {
+                    setFormData(prev => ({ ...prev, parent_cost_center_id: parentCC.id }));
+                }
+            }
+        }
+    }, [formData.task_id, tasks, costCenters]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!currentUser) return;
         setLoading(true);
         try {
             await expenseRequestService.createRequest({
@@ -53,7 +73,9 @@ const ExpenseRequestForm: React.FC<{
                 amount: parseFloat(formData.amount),
                 description: formData.description,
                 requester_comments: formData.requester_comments,
-                status: 'Pending'
+                status: 'Pending',
+                parent_cost_center_id: formData.parent_cost_center_id || null,
+                child_cost_center_id: formData.child_cost_center_id || null
             });
             onSuccess();
         } catch (error) {
@@ -74,7 +96,7 @@ const ExpenseRequestForm: React.FC<{
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Requester</label>
-                        <input type="text" disabled value={currentUser.full_name || currentUser.email} className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm sm:text-sm" title="Requester Name" />
+                        <input type="text" disabled value={currentUser?.full_name || currentUser?.email || ''} className="mt-1 block w-full rounded-md border-gray-300 bg-gray-100 shadow-sm sm:text-sm" title="Requester Name" />
                     </div>
 
                     <div>
@@ -136,6 +158,39 @@ const ExpenseRequestForm: React.FC<{
                             </select>
                         </div>
                     )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Parent Cost Center</label>
+                            <select
+                                required
+                                value={formData.parent_cost_center_id}
+                                title="Parent Cost Center"
+                                onChange={(e) => setFormData({ ...formData, parent_cost_center_id: e.target.value })}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            >
+                                <option value="">Select Parent...</option>
+                                {parentCostCenters.map(cc => (
+                                    <option key={cc.id} value={cc.id}>{cc.code} - {cc.title}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Child Cost Center</label>
+                            <select
+                                required
+                                value={formData.child_cost_center_id}
+                                title="Child Cost Center"
+                                onChange={(e) => setFormData({ ...formData, child_cost_center_id: e.target.value })}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            >
+                                <option value="">Select Child...</option>
+                                {childCostCenters.map(cc => (
+                                    <option key={cc.id} value={cc.id}>{cc.code} - {cc.title}</option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Amount (SAR)</label>
@@ -202,8 +257,8 @@ const ExpenseRequestForm: React.FC<{
                         </Button>
                     </div>
                 </form>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 
@@ -362,7 +417,7 @@ const ExpenseRequestPage: React.FC = () => {
                                                 <td className="px-6 py-4 text-sm text-gray-500">
                                                     <div className="font-medium text-gray-900">{req.type}</div>
                                                     {req.tasks?.title && <div className="text-xs text-gray-400">{req.tasks.title}</div>}
-                                                    {req.description && <div className="text-xs text-gray-500 mt-1 truncate max-w-xs">{req.description}</div>}
+                                                    {req.description && <div className="text-xs text-gray-500 mt-1 whitespace-pre-wrap">{req.description}</div>}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                                     SAR {req.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}

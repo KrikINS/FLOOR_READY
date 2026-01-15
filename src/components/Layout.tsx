@@ -62,7 +62,7 @@ const Layout: React.FC = () => {
                                         onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                         className="flex items-center max-w-xs text-sm font-medium text-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-primary hover:text-white"
                                         id="user-menu-button"
-                                        aria-expanded={isUserMenuOpen}
+                                        aria-expanded={isUserMenuOpen ? 'true' : 'false'}
                                         aria-haspopup="true"
                                     >
                                         <span className="sr-only">Open user menu</span>
@@ -131,7 +131,7 @@ const Layout: React.FC = () => {
                                 <button
                                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                                     className="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
-                                    aria-expanded="false"
+                                    aria-expanded={isMobileMenuOpen ? 'true' : 'false'}
                                 >
                                     <span className="sr-only">Open main menu</span>
                                     {/* Icon when menu is closed. */}

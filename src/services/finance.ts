@@ -8,7 +8,9 @@ export const financeService = {
             .from('expenses')
             .select(`
                 *,
-                tasks ( title )
+                tasks ( title ),
+                parent_cost_center:parent_cost_center_id ( code, title ),
+                child_cost_center:child_cost_center_id ( code, title )
             `)
             .order('created_at', { ascending: false });
 

@@ -9,7 +9,9 @@ export const expenseRequestService = {
             .select(`
                 *,
                 profiles:requester_id (full_name, avatar_url),
-                tasks:task_id (title)
+                tasks:task_id (title),
+                parent_cost_center:parent_cost_center_id (code, title),
+                child_cost_center:child_cost_center_id (code, title)
             `)
             .order('created_at', { ascending: false });
 

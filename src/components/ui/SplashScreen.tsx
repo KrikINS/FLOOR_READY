@@ -1,12 +1,15 @@
 
 import React from 'react';
 
+import { APP_VERSION } from '../../version';
+
 interface SplashScreenProps {
     mode?: 'loading' | 'login';
     children?: React.ReactNode;
 }
 
 const SplashScreen: React.FC<SplashScreenProps> = ({ mode = 'loading', children }) => {
+    // ... logic remains same ...
     const isLogin = mode === 'login';
     const [progress, setProgress] = React.useState(0);
 
@@ -85,7 +88,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ mode = 'loading', children 
                         </span>
                     </div>
                 </div>
-                <div className="text-slate-500 text-[10px] tracking-widest mt-2 uppercase">v1.0.1</div>
+                <div className="text-slate-500 text-[10px] tracking-widest mt-2 uppercase">v{APP_VERSION}</div>
             </div>
         </div>
     );

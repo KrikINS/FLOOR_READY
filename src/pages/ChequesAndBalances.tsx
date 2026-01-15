@@ -6,11 +6,13 @@ import type { Expense, Task } from '../types';
 import Button from '../components/ui/Button';
 import ExpenseModal from '../components/finance/ExpenseModal';
 
+import CostCentersTab from '../components/finance/CostCentersTab';
+
 const ChequesAndBalances: React.FC = () => {
     const { profile: currentUser } = useAuth();
     const isAdminOrManager = currentUser?.role === 'Admin' || currentUser?.role === 'Manager';
 
-    const [activeTab, setActiveTab] = useState<'expenses' | 'profitability'>('expenses');
+    const [activeTab, setActiveTab] = useState<'expenses' | 'profitability' | 'cost_centers'>('expenses');
 
     // Expenses State
     const [expenses, setExpenses] = useState<(Expense & { tasks?: { title: string } })[]>([]);
@@ -42,6 +44,7 @@ const ChequesAndBalances: React.FC = () => {
                 const tasksData = await tasksService.getTasks();
                 setTasks(tasksData);
             }
+            // cost_centers loads its own data
         } catch (error) {
             console.error('Error loading data:', error);
         } finally {
@@ -155,12 +158,21 @@ const ChequesAndBalances: React.FC = () => {
                             >
                                 Task Profitability Analysis
                             </button>
+                            <button
+                                onClick={() => setActiveTab('cost_centers')}
+                                className={`${activeTab === 'cost_centers'
+                                    ? 'border-indigo-500 text-indigo-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+                            >
+                                Cost Centers
+                            </button>
                         </nav>
                     </div>
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-6 pb-20">
-                    {loading ? (
+                    {loading && activeTab !== 'cost_centers' ? (
                         <div className="flex justify-center py-12">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                         </div>
@@ -446,6 +458,7 @@ const ChequesAndBalances: React.FC = () => {
                                     )}
                                 </>
                             )}
+                            {activeTab === 'cost_centers' && <CostCentersTab />}
                         </>
                     )}
                 </div>
@@ -453,5 +466,6 @@ const ChequesAndBalances: React.FC = () => {
         </div>
     );
 };
+
 
 export default ChequesAndBalances;
