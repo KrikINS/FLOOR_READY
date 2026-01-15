@@ -4,6 +4,7 @@ import { tasksService } from '../../services/tasks';
 import type { Task } from '../../types';
 import TaskStatusBadge from '../../components/tasks/TaskStatusBadge';
 import Button from '../../components/ui/Button';
+import ProfitabilityModal from '../../components/tasks/ProfitabilityModal';
 
 const TaskDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -11,6 +12,7 @@ const TaskDetails: React.FC = () => {
     const [task, setTask] = useState<Task | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isProfitabilityModalOpen, setIsProfitabilityModalOpen] = useState(false);
 
     useEffect(() => {
         if (id) fetchTask(id);
@@ -85,8 +87,63 @@ const TaskDetails: React.FC = () => {
                 </div>
             </div>
 
+
+            <div className="bg-white shadow rounded-lg p-6 space-y-4">
+                <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-bold text-slate-900">Profitability Analysis</h2>
+                    <Button variant="secondary" size="sm" onClick={() => setIsProfitabilityModalOpen(true)}>Edit</Button>
+                </div>
+                <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                        <dt className="text-sm font-medium text-slate-500">Cost Center</dt>
+                        <dd className="mt-1 text-sm text-slate-900">
+                            {task.cost_center ? `${task.cost_center.code} - ${task.cost_center.title}` : 'Not assigned'}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt className="text-sm font-medium text-slate-500">Cost to Client</dt>
+                        <dd className="mt-1 text-sm text-slate-900">
+                            {task.cost_to_client ? `$${task.cost_to_client}` : '-'}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt className="text-sm font-medium text-slate-500">Unit Type</dt>
+                        <dd className="mt-1 text-sm text-slate-900">{task.unit_type || '-'}</dd>
+                    </div>
+                    <div>
+                        <dt className="text-sm font-medium text-slate-500">Billable Quantity</dt>
+                        <dd className="mt-1 text-sm text-slate-900">{task.billable_quantity || '-'}</dd>
+                    </div>
+                    <div className="sm:col-span-2">
+                        <dt className="text-sm font-medium text-slate-500">Comments</dt>
+                        <dd className="mt-1 text-sm text-slate-900">{task.profitability_comments || '-'}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            {
+                task && (
+                    <ProfitabilityModal
+                        isOpen={isProfitabilityModalOpen}
+                        onClose={() => setIsProfitabilityModalOpen(false)}
+                        task={task}
+                        onSave={async (updates) => {
+                            try {
+                                const updatedTask = await tasksService.updateTask(task.id, updates);
+                                setTask(prev => prev ? { ...prev, ...updatedTask, cost_center_id: updates.cost_center_id } : null);
+                                // Refresh logic might be needed for full joins, but let's try shallow update first
+                                if (id) fetchTask(id); // refetch to get the joined cost center details
+                            } catch (err) {
+                                console.error('Failed to update task', err);
+                                throw err;
+                            }
+                        }}
+                    />
+                )
+            }
+
             <Link to="/tasks" className="text-primary hover:underline">&larr; Back to Tasks</Link>
-        </div>
+        </div >
     );
 };
 

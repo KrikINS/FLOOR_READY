@@ -40,6 +40,8 @@ export interface Task {
     completed_at?: string | null;
     profiles?: Profile | null; // For joined assignee query
     events?: Event | null; // For joined event query
+    cost_center_id?: string | null;
+    cost_center?: CostCenter | null; // For joined cost center query
 
     // New Fields
     custom_id?: string | null;

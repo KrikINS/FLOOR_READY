@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { Task, TaskStatus, Profile, TaskAttachment } from '../../types';
 import Button from '../ui/Button';
 import { tasksService } from '../../services/tasks';
@@ -35,6 +36,7 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
     const [attachments, setAttachments] = useState<TaskAttachment[]>([]);
     const [teamMembers, setTeamMembers] = useState<Profile[]>([]);
     const [isReassigning, setIsReassigning] = useState(false);
+    const navigate = useNavigate();
 
     // Fulfillment State
     const [fulfillmentData, setFulfillmentData] = useState({
@@ -232,7 +234,15 @@ const TaskActionModal: React.FC<TaskActionModalProps> = ({
                 <div className="inline-block transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:align-middle">
                     <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         {/* Header Section */}
-                        <h3 className="text-xl font-bold leading-6 text-gray-900 mb-4">{task.title}</h3>
+                        <div className="flex justify-between items-start mb-4">
+                            <h3 className="text-xl font-bold leading-6 text-gray-900">{task.title}</h3>
+                            <button
+                                onClick={() => navigate(`/tasks/${task.id}`)}
+                                className="text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                                View Full Details & Profitability
+                            </button>
+                        </div>
 
                         {!isAssignee && !isAdminOrManager && (
                             <div className="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-4">

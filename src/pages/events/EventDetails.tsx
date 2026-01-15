@@ -101,7 +101,7 @@ const EventDetails: React.FC = () => {
                         </p>
                     </div>
                     <div className="flex space-x-3">
-                        <Button variant="secondary" onClick={() => alert('Edit Implementation coming soon')}>Edit</Button>
+                        <Button variant="secondary" onClick={() => navigate(`/events/${event.id}/edit`)}>Edit</Button>
                         <Button variant="danger" onClick={handleDelete}>Delete</Button>
                     </div>
                 </div>
@@ -111,6 +111,12 @@ const EventDetails: React.FC = () => {
                             <dt className="text-sm font-medium text-slate-500">Description</dt>
                             <dd className="mt-1 text-sm text-slate-900">{event.description || 'No description provided.'}</dd>
                         </div>
+                        {event.cost_center_code && (
+                            <div className="sm:col-span-2">
+                                <dt className="text-sm font-medium text-slate-500">Cost Center</dt>
+                                <dd className="mt-1 text-sm text-slate-900">{event.cost_center_code}</dd>
+                            </div>
+                        )}
                     </dl>
                 </div>
             </div>

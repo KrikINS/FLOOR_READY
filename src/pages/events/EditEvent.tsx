@@ -1,36 +1,68 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { eventsService } from '../../services/events';
 import { costCenterService } from '../../services/costCenters';
-import type { CostCenter } from '../../types';
+import type { CostCenter, EventStatus } from '../../types';
 import Button from '../../components/ui/Button';
 
-const NewEvent: React.FC = () => {
+const EditEvent: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [costCenters, setCostCenters] = useState<CostCenter[]>([]);
+
     const [formData, setFormData] = useState({
         name: '',
         description: '',
         location: '',
         start_date: '',
         end_date: '',
-        status: 'Planning' as const,
+        status: 'Planning' as EventStatus,
         cost_center_code: '',
     });
 
-    React.useEffect(() => {
-        const fetchCostCenters = async () => {
-            try {
-                const data = await costCenterService.getCostCenters();
-                setCostCenters(data);
-            } catch (err) {
-                console.error('Failed to load cost centers', err);
-            }
-        };
-        fetchCostCenters();
-    }, []);
+    useEffect(() => {
+        if (id) {
+            fetchData(id);
+        }
+    }, [id]);
+
+    const fetchData = async (eventId: string) => {
+        try {
+            setLoading(true);
+            const [event, costCentersData] = await Promise.all([
+                eventsService.getEvent(eventId),
+                costCenterService.getCostCenters()
+            ]);
+
+            setCostCenters(costCentersData);
+
+            // Format dates for input fields (YYYY-MM-DDThh:mm)
+            const formatForInput = (dateStr: string | null) => {
+                if (!dateStr) return '';
+                const date = new Date(dateStr);
+                // Adjust to local time string for input
+                return new Date(date.getTime() - (date.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            };
+
+            setFormData({
+                name: event.name,
+                description: event.description || '',
+                location: event.location || '',
+                start_date: formatForInput(event.start_date),
+                end_date: formatForInput(event.end_date),
+                status: event.status,
+                cost_center_code: event.cost_center_code || '',
+            });
+        } catch (err) {
+            console.error(err);
+            setError('Failed to load event details.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
@@ -39,30 +71,49 @@ const NewEvent: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!id) return;
+
         setError(null);
-        setLoading(true);
+        setSaving(true);
 
         try {
-            await eventsService.createEvent({
+            await eventsService.updateEvent(id, {
                 ...formData,
                 start_date: formData.start_date ? new Date(formData.start_date).toISOString() : null,
                 end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
                 cost_center_code: formData.cost_center_code || null,
             });
-            navigate('/events');
+            navigate(`/events/${id}`);
         } catch (err) {
             console.error(err);
-            setError('Failed to create event. Please try again.');
+            setError('Failed to update event. Please try again.');
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="text-center py-12">
+                <p className="text-red-500">{error}</p>
+                <Button className="mt-4" onClick={() => navigate('/events')}>Back to Events</Button>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-2xl mx-auto space-y-8">
             <div>
-                <h1 className="text-3xl font-bold text-slate-900">Create New Event</h1>
-                <p className="mt-1 text-sm text-slate-500">Fill in the details for the new event.</p>
+                <h1 className="text-3xl font-bold text-slate-900">Edit Event</h1>
+                <p className="mt-1 text-sm text-slate-500">Update event details.</p>
             </div>
 
             {error && (
@@ -184,11 +235,11 @@ const NewEvent: React.FC = () => {
                 </div>
 
                 <div className="flex justify-end space-x-3 pt-4 border-t border-slate-200">
-                    <Button type="button" variant="secondary" onClick={() => navigate('/events')}>
+                    <Button type="button" variant="secondary" onClick={() => navigate(`/events/${id}`)}>
                         Cancel
                     </Button>
-                    <Button type="submit" isLoading={loading}>
-                        Create Event
+                    <Button type="submit" isLoading={saving}>
+                        Save Changes
                     </Button>
                 </div>
             </form>
@@ -196,4 +247,4 @@ const NewEvent: React.FC = () => {
     );
 };
 
-export default NewEvent;
+export default EditEvent;

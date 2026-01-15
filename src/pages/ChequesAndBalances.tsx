@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import type { Expense, Task } from '../types';
 import Button from '../components/ui/Button';
 import ExpenseModal from '../components/finance/ExpenseModal';
+import ProfitabilityModal from '../components/tasks/ProfitabilityModal';
 
 import CostCentersTab from '../components/finance/CostCentersTab';
 
@@ -19,7 +20,10 @@ const ChequesAndBalances: React.FC = () => {
 
     // Profitability State
     const [tasks, setTasks] = useState<Task[]>([]);
-    const [editingRows, setEditingRows] = useState<{ [key: string]: Partial<Task> }>({});
+
+    // Profitability Modal State
+    const [isProfitabilityModalOpen, setIsProfitabilityModalOpen] = useState(false);
+    const [selectedTaskForProfitability, setSelectedTaskForProfitability] = useState<Task | null>(null);
 
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
@@ -91,31 +95,25 @@ const ChequesAndBalances: React.FC = () => {
         return `${initials}${suffix}`;
     };
 
-    const handleCellChange = (taskId: string, field: keyof Task, value: string | number) => {
-        setEditingRows(prev => ({
-            ...prev,
-            [taskId]: {
-                ...prev[taskId],
-                [field]: value
-            }
-        }));
+    const handleEditProfitability = (task: Task) => {
+        setSelectedTaskForProfitability(task);
+        setIsProfitabilityModalOpen(true);
     };
 
-    const saveRow = async (taskId: string) => {
-        const updates = editingRows[taskId];
-        if (!updates) return;
-
+    const handleProfitabilitySave = async (updates: Partial<Task>) => {
+        if (!selectedTaskForProfitability) return;
         try {
-            await tasksService.updateTask(taskId, updates);
-            // Update local state
-            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
-            // Clear edit state for this row
-            const newEditing = { ...editingRows };
-            delete newEditing[taskId];
-            setEditingRows(newEditing);
+            const updatedTask = await tasksService.updateTask(selectedTaskForProfitability.id, updates);
+            setTasks(prev => prev.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask, cost_center_id: updates.cost_center_id } : t));
+
+            // If we need to fetch full object for relations like cost_center, we might need to reload or handle it manually.
+            // For now, let's reload data to be safe and get the joined cost_center
+            const tasksData = await tasksService.getTasks();
+            setTasks(tasksData);
+
         } catch (error) {
-            console.error('Failed to save task updates:', error);
-            alert('Failed to save changes.');
+            console.error('Failed to save profitability details', error);
+            throw error;
         }
     };
 
@@ -138,7 +136,7 @@ const ChequesAndBalances: React.FC = () => {
                     </div>
 
                     {/* Tabs */}
-                    <div className="border-b border-gray-200 mb-6 overflow-x-auto">
+                    <div className="border-b border-gray-200 mb-6 overflow-x-auto overflow-y-hidden">
                         <nav className="-mb-px flex space-x-8 min-w-max">
                             <button
                                 onClick={() => setActiveTab('expenses')}
@@ -331,26 +329,24 @@ const ChequesAndBalances: React.FC = () => {
                                                             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Type</th>
                                                             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Qty</th>
                                                             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider font-bold">Net Profit</th>
+                                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Cost Center</th>
                                                             <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-48">Comments</th>
                                                             <th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody className="bg-white divide-y divide-gray-200">
                                                         {tasks.map((task) => {
-                                                            const editData = editingRows[task.id] || {};
-
-                                                            // Values (prefer edit data, fallback to task data)
-                                                            const costToClient = editData.cost_to_client !== undefined ? Number(editData.cost_to_client) : (task.cost_to_client || 0);
-                                                            const actualCost = task.actual_cost || 0; // Coming from task fulfillment
-                                                            const quantity = editData.billable_quantity !== undefined ? Number(editData.billable_quantity) : (task.billable_quantity || 1);
-                                                            const unitType = (editData.unit_type !== undefined ? editData.unit_type : task.unit_type) || 'Piece';
-                                                            const comments = (editData.profitability_comments !== undefined ? editData.profitability_comments : task.profitability_comments) || '';
+                                                            // Values
+                                                            const costToClient = task.cost_to_client || 0;
+                                                            const actualCost = task.actual_cost || 0;
+                                                            const quantity = task.billable_quantity || 0;
+                                                            const unitType = task.unit_type || '-';
+                                                            const comments = task.profitability_comments || '-';
+                                                            const costCenter = task.cost_center ? task.cost_center.code : '-';
 
                                                             // Calculations
                                                             const profitPerUnit = costToClient - actualCost;
-                                                            const netProfit = profitPerUnit * quantity;
-
-                                                            const isEditing = !!editingRows[task.id];
+                                                            const netProfit = profitPerUnit * (quantity || 1);
 
                                                             return (
                                                                 <tr key={task.id} className="hover:bg-gray-50 text-sm">
@@ -372,16 +368,8 @@ const ChequesAndBalances: React.FC = () => {
                                                                         </div>
                                                                     </td>
 
-                                                                    {/* Cost To Client (Editable) */}
-                                                                    <td className="px-3 py-4 whitespace-nowrap">
-                                                                        <input
-                                                                            type="number"
-                                                                            value={costToClient}
-                                                                            onChange={(e) => handleCellChange(task.id, 'cost_to_client', parseFloat(e.target.value) || 0)}
-                                                                            className="w-24 border-gray-300 rounded-md text-sm p-1 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                                                                            title="Cost to client"
-                                                                            aria-label="Cost to client"
-                                                                        />
+                                                                    <td className="px-3 py-4 whitespace-nowrap text-gray-900">
+                                                                        {costToClient.toLocaleString()}
                                                                     </td>
 
                                                                     <td className="px-3 py-4 whitespace-nowrap text-gray-500">
@@ -392,56 +380,33 @@ const ChequesAndBalances: React.FC = () => {
                                                                         {profitPerUnit.toLocaleString()}
                                                                     </td>
 
-                                                                    {/* Unit Type (Editable) */}
-                                                                    <td className="px-3 py-4 whitespace-nowrap">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={unitType}
-                                                                            onChange={(e) => handleCellChange(task.id, 'unit_type', e.target.value)}
-                                                                            className="w-20 border-gray-300 rounded-md text-sm p-1 shadow-sm"
-                                                                            title="Unit type"
-                                                                            aria-label="Unit type"
-                                                                        />
+                                                                    <td className="px-3 py-4 whitespace-nowrap text-gray-900">
+                                                                        {unitType}
                                                                     </td>
 
-                                                                    {/* Quantity (Editable) */}
-                                                                    <td className="px-3 py-4 whitespace-nowrap">
-                                                                        <input
-                                                                            type="number"
-                                                                            value={quantity}
-                                                                            onChange={(e) => handleCellChange(task.id, 'billable_quantity', parseFloat(e.target.value) || 0)}
-                                                                            className="w-16 border-gray-300 rounded-md text-sm p-1 shadow-sm"
-                                                                            title="Quantity"
-                                                                            aria-label="Quantity"
-                                                                        />
+                                                                    <td className="px-3 py-4 whitespace-nowrap text-gray-900">
+                                                                        {quantity}
                                                                     </td>
 
                                                                     <td className={`px-3 py-4 whitespace-nowrap font-bold ${netProfit < 0 ? 'text-red-600' : 'text-green-600'}`}>
                                                                         {netProfit.toLocaleString()}
                                                                     </td>
 
-                                                                    {/* Comments (Editable) */}
-                                                                    <td className="px-3 py-4 whitespace-nowrap">
-                                                                        <input
-                                                                            type="text"
-                                                                            value={comments}
-                                                                            onChange={(e) => handleCellChange(task.id, 'profitability_comments', e.target.value)}
-                                                                            className="w-full border-gray-300 rounded-md text-sm p-1 shadow-sm"
-                                                                            placeholder="Notes..."
-                                                                            title="Comments"
-                                                                            aria-label="Comments"
-                                                                        />
+                                                                    <td className="px-3 py-4 whitespace-nowrap text-gray-500">
+                                                                        {costCenter}
+                                                                    </td>
+
+                                                                    <td className="px-3 py-4 whitespace-nowrap text-gray-500 max-w-xs truncate" title={comments}>
+                                                                        {comments}
                                                                     </td>
 
                                                                     <td className="px-3 py-4 whitespace-nowrap text-right">
-                                                                        {isEditing && (
-                                                                            <button
-                                                                                onClick={() => saveRow(task.id)}
-                                                                                className="text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1 rounded-md text-xs font-medium transition-colors"
-                                                                            >
-                                                                                Save
-                                                                            </button>
-                                                                        )}
+                                                                        <button
+                                                                            onClick={() => handleEditProfitability(task)}
+                                                                            className="text-indigo-600 hover:text-indigo-900 font-medium"
+                                                                        >
+                                                                            Edit
+                                                                        </button>
                                                                     </td>
                                                                 </tr>
                                                             );
@@ -459,6 +424,15 @@ const ChequesAndBalances: React.FC = () => {
                                 </>
                             )}
                             {activeTab === 'cost_centers' && <CostCentersTab />}
+
+                            {selectedTaskForProfitability && (
+                                <ProfitabilityModal
+                                    isOpen={isProfitabilityModalOpen}
+                                    onClose={() => setIsProfitabilityModalOpen(false)}
+                                    task={selectedTaskForProfitability}
+                                    onSave={handleProfitabilitySave}
+                                />
+                            )}
                         </>
                     )}
                 </div>

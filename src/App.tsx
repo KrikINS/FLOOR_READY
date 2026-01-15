@@ -18,6 +18,7 @@ import UpdatePassword from './pages/UpdatePassword';
 import EventsList from './pages/events/EventsList';
 import NewEvent from './pages/events/NewEvent';
 import EventDetails from './pages/events/EventDetails';
+import EditEvent from './pages/events/EditEvent';
 
 import TasksList from './pages/tasks/TasksList';
 import TaskDetails from './pages/tasks/TaskDetails';
@@ -62,6 +63,7 @@ function AppContent() {
           <Route path="/events" element={<EventsList />} />
           <Route path="/events/new" element={<NewEvent />} />
           <Route path="/events/:id" element={<EventDetails />} />
+          <Route path="/events/:id/edit" element={<EditEvent />} />
 
           <Route path="/tasks" element={<TasksList />} />
           <Route path="/tasks/:id" element={<TaskDetails />} />
