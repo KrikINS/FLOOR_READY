@@ -201,7 +201,7 @@ const Layout: React.FC = () => {
                 </div>
             </main>
 
-            <KrikInsLogo />
+            <KrikInsLogo className="scale-50 origin-bottom-right" />
         </div>
     );
 };
